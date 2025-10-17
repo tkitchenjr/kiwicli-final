@@ -1,0 +1,112 @@
+ 1. Plan and Define the Core Components
+Before diving into implementation, ensure you have a clear understanding of the following:
+- Objects: Define the core objects (e.g., `User`, `Portfolio`, `Stock`) and their attributes and methods.
+- Features: List the features your application will support (e.g., user management, portfolio management, marketplace).
+- CLI Structure: Plan the menus and commands your CLI will expose to the user.
+
+---
+
+ 2. Implement Core Objects (Domain Layer)
+Start by implementing the core objects that represent your application's data and logic. These objects should be independent of the CLI.
+
+ Example:
+- `User` Class:
+  - Attributes: `username`, `first_name`, `last_name`, etc.
+  - Methods: `update_profile`, `get_full_name`, etc.
+- `Portfolio` Class:
+  - Attributes: `name`, `assets`, `value`.
+  - Methods: `add_asset`, `remove_asset`, `calculate_value`.
+
+ Steps:
+1. Create a `domain` folder to house your core objects.
+2. Define each class in its own file (e.g., `domain/User.py`, `domain/Portfolio.py`).
+3. Write unit tests for each class to ensure they work as expected.
+
+User
+Methods: Add, Delete, Modify?
+
+Portfolio
+Methods: View Balance, View %
+
+Stock:
+Methods: Buy, Sell
+—
+
+Database holds the actual data so functions should be built off of it
+
+ 3. Implement Features (Service Layer)
+Once the objects are defined, implement the features that use these objects. These features should encapsulate the business logic and interact with the objects.
+
+ Example:
+- User Management:
+  - Create a `UserService` class to handle user-related operations (e.g., create, delete, update users).
+- Portfolio Management:
+  - Create a `PortfolioService` class to handle portfolio-related operations (e.g., add/remove assets, calculate portfolio value).
+
+ Steps:
+1. Create a `services` folder to house the feature logic.
+2. Define service classes that interact with the domain objects.
+3. Write unit tests for each service to ensure the features work as expected.
+
+---
+
+ 4. Design the CLI (Interface Layer)
+Now that the core objects and features are implemented, design the CLI to interact with the user. The CLI should call the appropriate services to perform operations.
+
+ Example:
+- Main Menu:
+  - Options: `1. Login`, `2. Exit`.
+- Login Menu:
+  - Options: `1. Manage Users`, `2. Manage Portfolios`, `3. Logout`.
+
+ Steps:
+1. Create a 
+
+cli
+
+ folder to house the CLI logic.
+2. Define constants for menu IDs and options (e.g., 
+
+MAIN_MENU
+
+, 
+
+LOGIN_MENU
+
+).
+3. Implement functions to display menus and handle user input.
+4. Integrate the CLI with the services to perform operations.
+
+---
+
+ 5. Integrate Components
+Once the CLI is implemented, integrate it with the services and domain objects. This is where the CLI interacts with the services, which in turn interact with the domain objects.
+
+ Example:
+- When the user selects "Manage Users" from the CLI, the CLI calls the `UserService` to perform the requested operation.
+
+---
+
+ 6. Test the Application
+Testing is critical to ensure your application works as expected.
+
+ Steps:
+1. Write unit tests for the domain objects, services, and CLI.
+2. Test the integration of the CLI with the services.
+3. Perform manual testing to ensure the menus and commands work as expected.
+
+---
+
+ 7. Refactor and Optimize
+After testing, refactor your code to improve readability, maintainability, and performance. Look for opportunities to:
+- Remove duplicate code.
+- Simplify complex logic.
+- Improve error handling.
+
+---
+
+ 8. Deploy and Maintain
+Once the application is complete, deploy it and ensure it’s maintainable:
+1. Package the application (e.g., using `setuptools` or `pyinstaller`).
+2. Write documentation for the CLI and features.
+3. Plan for future updates and enhancements.
