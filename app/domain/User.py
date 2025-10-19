@@ -26,35 +26,46 @@ def view_users(users: list[User]) -> None:
 			table.add_row(user.username, user.firstname, user.lastname, f"{user.balance:.2f}")
 	_console.print(table)
 
-# define function to add new user
-def add_user(username:str, password:str, firstname:str, lastname:str, balance:float) -> User:
-	print("\n   Add New User   ")
-	username = input("Username: ")
-	password = input("Password: ")
-	firstname = input("First Name: ")
-	lastname = input("Last Name: ")
-	balance = (input("Balance: "))
 
-	username = {
-		"username":username,
-		"password":password,
-		"firstname":firstname,
-		"lastname":lastname,
-		"balance":balance
-	}
-	print ("\n Welcome {username} !")
-
-
-# define function to delete user
-def delete_user(username:str) -> None:
+# define function to add user
+def add_user(username:str = None, password:str = None, firstname:str = None, lastname:str = None, balance:float = None) -> None:
 	import db
-	user = db.query_user(username)
-	if not user:
-		raise Exception ("User not found")
-	db.user_list.remove(user)
+	_console.print("\n   Add New User   ", style="yellow")
+	if username is None:
+		username = _console.input("Username: ")
+	if password is None:
+		password = _console.input("Password: ")
+	if firstname is None:
+		firstname = _console.input("First Name: ")
+	if lastname is None:
+		lastname = _console.input("Last Name: ")
+	if balance is None:
+		balance_str = _console.input("Balance: ")
+		try:
+			balance = float(balance_str)
+		except ValueError:
+			_console.print("Balance must be a number.", style="red")
+			return
+	new_user = {
+		"username": username,
+		"password": password,
+		"firstname": firstname,
+		"lastname": lastname,
+		"balance": balance
+	}
+	db.users.append(new_user)
+	_console.print(f"\nWelcome {username}! User added.", style="green")
 
-#how to make user menu only accesible to admin users
-# logic on menu printer that routes
-# after login check if user is admin
-# if admin show user management menu
-# else display error and redirect to main menu
+
+# define function to delete user interactively
+def delete_user() -> None:
+    import db
+    _console.print("\n   Delete User   ", style="red")
+    username = _console.input("Enter username to delete: ")
+    # Find user dict in db.users
+    user_index = next((i for i, u in enumerate(db.users) if u["username"] == username), None)
+    if user_index is not None:
+        del db.users[user_index]
+        _console.print(f"User '{username}' deleted.", style="green")
+    else:
+        _console.print(f"User '{username}' not found.", style="red")

@@ -1,12 +1,18 @@
 from cli import constants
 from rich.console import Console
 from typing import Dict, Tuple 
+from domain.User import view_users
 from domain.MenuFunctions import MenuFunctions
 import db 
 
 
 
 _console = Console()
+
+# Initialize current_user as None to indicate no user is logged in at program start
+# This will be set to a User object after successful login
+current_user = None
+
 _menu: Dict[int, str] = {
     constants.login_menu: "------\nLogin Menu\n-----\n1. Login\n0. Exit",
     constants.main_menu: "------\nMain Menu\n-----\n1. Manage Users\n2. Manage Portfolios\n3. Marketplace\n0. Logout",
@@ -44,7 +50,7 @@ def handle_user_input(menu_id: int, user_input: str):
         print_error("Please enter a valid menu option")
         print_menu(menu_id)
     except Exception as e:
-        print_error(f"Error executing menu option: {str(e)}")
+        print_error(f"Error: {str(e)}")
         print_menu(menu_id)
 # define function to handle user login
 def get_login_inputs() -> Tuple[str,str]:
@@ -54,24 +60,39 @@ def get_login_inputs() -> Tuple[str,str]:
 
 # login function
 def login():
+    global current_user
     username, password = get_login_inputs()
     try:
         #query db for user and handle exception
         user = db.query_user(username)
         if not user or user.password != password:
             raise Exception("Invalid username or password")
+        current_user = user
         _console.print(f"\nWelcome, {user.firstname}!", style="green")
     except Exception as e:
         raise Exception(f"Login failed: {str(e)}")
     
 # define router function to navigate between menus based on user input
+
+from domain.User import add_user, delete_user
+
+def admin_guard():
+    global current_user
+    if current_user and current_user.username == "admin":
+        return constants.user_menu
+    else:
+        print_error("Access denied: Only admin can manage users.")
+        return constants.main_menu
+
 _router: Dict[str, MenuFunctions] = {
-     "0.1": MenuFunctions(executor=login, navigator = lambda: constants.main_menu),
-     # Main menu options (menu_id = 1)
-     "1.1": MenuFunctions(executor=None, navigator = lambda: constants.user_menu),
-     "1.2": MenuFunctions(executor=None, navigator = lambda: constants.portfolio_menu),
-     "1.3": MenuFunctions(executor=None, navigator = lambda: constants.marketplace_menu),
-} 
+    "0.1": MenuFunctions(executor=login, navigator = lambda: constants.main_menu),
+    "1.1": MenuFunctions(executor=None, navigator = admin_guard),
+    "1.2": MenuFunctions(executor=None, navigator = lambda: constants.portfolio_menu),
+    "1.3": MenuFunctions(executor=None, navigator = lambda: constants.marketplace_menu),
+    "2.1": MenuFunctions(executor=lambda: view_users([db.query_user(u["username"]) for u in db.users]), navigator=lambda: constants.user_menu),
+    "2.2": MenuFunctions(executor=add_user, navigator=lambda: constants.user_menu),
+    "2.3": MenuFunctions(executor=delete_user, navigator=lambda: constants.user_menu),
+}
 
 # define function to print error messages
 def print_error(error: str):
