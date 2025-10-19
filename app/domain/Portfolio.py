@@ -170,6 +170,20 @@ def view_all_portfolios() -> None:
         )
     
     _console.print(table)
+    # Prompt to view holdings for a selected portfolio
+    if user_portfolios:
+        choice = _console.input("Enter a Portfolio ID to view holdings, or press Enter to skip: ").strip()
+        if choice:
+            try:
+                pid = int(choice)
+                # Only allow viewing if portfolio belongs to user (or admin)
+                valid_ids = [p.get("portfolio_id") for p in user_portfolios]
+                if pid in valid_ids:
+                    view_holdings(pid)
+                else:
+                    _console.print("Invalid Portfolio ID.", style="red")
+            except Exception:
+                _console.print("Invalid input.", style="red")
 
 # Create a new portfolio
 def create_portfolio() -> None:
@@ -202,6 +216,18 @@ def delete_portfolio(portfolio_id: int) -> None:
     owner = portfolio.get("owner")
     if session.current_user.username != "admin" and owner != session.current_user.username:
         _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
+        return
+    # Prevent deletion if holdings are not empty
+    holdings = portfolio.get("holdings", [])
+    has_investments = False
+    if isinstance(holdings, dict):
+        has_investments = len(holdings) > 0
+    elif isinstance(holdings, (list, set, tuple)):
+        has_investments = len(holdings) > 0
+    elif isinstance(holdings, str):
+        has_investments = bool(holdings.strip())
+    if has_investments:
+        _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
         return
     name = portfolio["name"]
     del db.portfolios[idx]

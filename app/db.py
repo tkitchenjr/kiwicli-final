@@ -48,7 +48,7 @@ portfolios = [
         "portfolio_id": 1,
         "name": "Tech Stocks",
         "description": "Stock & Crypto Holdings",
-        "holdings": {"AAPL,MSFT,AMZN,NVDA,BTC"}
+        "holdings": {"AAPL": 10, "MSFT": 5, "AMZN": 2, "NVDA": 8, "BTC": 1}
     }
 ]
 #create Security list
