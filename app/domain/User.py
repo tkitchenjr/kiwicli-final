@@ -60,12 +60,11 @@ def add_user(username:str = None, password:str = None, firstname:str = None, las
 # define function to delete user interactively
 def delete_user() -> None:
     import db
-    _console.print("\n   Delete User   ", style="red")
+    _console.print("\n   Delete User   ", style="yellow")
     username = _console.input("Enter username to delete: ")
-    # Find user dict in db.users
-    user_index = next((i for i, u in enumerate(db.users) if u["username"] == username), None)
-    if user_index is not None:
-        del db.users[user_index]
-        _console.print(f"User '{username}' deleted.", style="green")
-    else:
-        _console.print(f"User '{username}' not found.", style="red")
+    
+    if not db.delete_user(username):
+        _console.print("Cannot delete this user (either not found or admin).", style="red")
+        return
+    
+    _console.print(f"User '{username}' deleted.", style="green")

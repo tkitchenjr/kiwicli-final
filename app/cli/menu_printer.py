@@ -4,14 +4,11 @@ from typing import Dict, Tuple
 from domain.User import view_users
 from domain.MenuFunctions import MenuFunctions
 import db 
+import session
 
 
 
 _console = Console()
-
-# Initialize current_user as None to indicate no user is logged in at program start
-# This will be set to a User object after successful login
-current_user = None
 
 _menu: Dict[int, str] = {
     constants.login_menu: "------\nLogin Menu\n-----\n1. Login\n0. Exit",
@@ -60,14 +57,13 @@ def get_login_inputs() -> Tuple[str,str]:
 
 # login function
 def login():
-    global current_user
     username, password = get_login_inputs()
     try:
         #query db for user and handle exception
         user = db.query_user(username)
         if not user or user.password != password:
             raise Exception("Invalid username or password")
-        current_user = user
+        session.current_user = user
         _console.print(f"\nWelcome, {user.firstname}!", style="green")
     except Exception as e:
         raise Exception(f"Login failed: {str(e)}")
@@ -77,8 +73,7 @@ def login():
 from domain.User import add_user, delete_user
 
 def admin_guard():
-    global current_user
-    if current_user and current_user.username == "admin":
+    if session.current_user and session.current_user.username == "admin":
         return constants.user_menu
     else:
         print_error("Access denied: Only admin can manage users.")

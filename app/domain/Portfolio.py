@@ -2,6 +2,7 @@
 from rich.console import Console
 from rich.table import Table
 import db
+import session
 
 #Define Portfolio class
 class Portfolio():
@@ -19,6 +20,16 @@ def view_holdings(portfolio_id: int) -> None:
     if not portfolio:
         _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
         return
+    
+    # Enforce ownership (admin can view all)
+    if not session.current_user:
+        _console.print("Please log in to view portfolios.", style="red")
+        return
+    owner = portfolio.get("owner")
+    if session.current_user.username != "admin" and owner != session.current_user.username:
+        _console.print("Access denied: you cannot view another user's portfolio.", style="red")
+        return
+    
     holdings_raw = portfolio.get("holdings", [])
 
     # Build a price lookup for securities
@@ -83,6 +94,9 @@ def view_holdings(portfolio_id: int) -> None:
 
 # Create a new portfolio
 def create_portfolio() -> None:
+    if not session.current_user:
+        _console.print("Please log in to create a portfolio.", style="red")
+        return
     _console.print("\n   Create Portfolio   ", style="yellow")
     name = _console.input("Portfolio Name: ")
     description = _console.input("Description: ")
@@ -91,26 +105,41 @@ def create_portfolio() -> None:
         "portfolio_id": new_id,
         "name": name,
         "description": description,
+        "owner": session.current_user.username,
         "holdings": []
     })
     _console.print(f"Portfolio '{name}' created with ID {new_id}.", style="green")
 
 # Delete a portfolio by ID
 def delete_portfolio(portfolio_id: int) -> None:
+    if not session.current_user:
+        _console.print("Please log in to delete a portfolio.", style="red")
+        return
     idx = next((i for i, p in enumerate(db.portfolios) if p["portfolio_id"] == portfolio_id), None)
-    if idx is not None:
-        name = db.portfolios[idx]["name"]
-        del db.portfolios[idx]
-        _console.print(f"Portfolio '{name}' deleted.", style="green")
-    else:
+    if idx is None:
         _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
+        return
+    portfolio = db.portfolios[idx]
+    owner = portfolio.get("owner")
+    if session.current_user.username != "admin" and owner != session.current_user.username:
+        _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
+        return
+    name = portfolio["name"]
+    del db.portfolios[idx]
+    _console.print(f"Portfolio '{name}' deleted.", style="green")
 
 # Liquidate holdings for a portfolio
 def liquidate_holdings(portfolio_id: int) -> None:
-    import db
+    if not session.current_user:
+        _console.print("Please log in to liquidate holdings.", style="red")
+        return
     portfolio = next((p for p in db.portfolios if p["portfolio_id"] == portfolio_id), None)
     if not portfolio:
         _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
+        return
+    owner = portfolio.get("owner")
+    if session.current_user.username != "admin" and owner != session.current_user.username:
+        _console.print("Access denied: you cannot modify another user's portfolio.", style="red")
         return
     portfolio["holdings"] = []
     _console.print(f"All holdings liquidated for portfolio '{portfolio['name']}'.", style="green")
