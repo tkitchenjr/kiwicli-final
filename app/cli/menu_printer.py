@@ -17,7 +17,7 @@ _menu: Dict[int, str] = {
     constants.login_menu: "------\nLogin Menu\n-----\n1. Login\n0. Exit",
     constants.main_menu: "------\nMain Menu\n-----\n1. Manage Users\n2. Manage Portfolios\n3. Marketplace\n0. Logout",
     constants.user_menu: "------\nUser Menu\n-----\n1. View Users\n2. Add User\n3. Delete User\n0. Back to Main Menu",
-    constants.portfolio_menu: "------\nPortfolio Menu\n-----\n1. View Holdings\n2. Create Portfolio\n3. Delete Portfolio\n3. Liquidate Holdings\n0. Back to Main Menu",
+    constants.portfolio_menu: "------\nPortfolio Menu\n-----\n1. View Holdings\n2. Create Portfolio\n3. Delete Portfolio\n4. Liquidate Holdings\n0. Back to Main Menu",
     constants.marketplace_menu: "------\nMarketplace Menu\n-----\n1. View Securities\n2. Place Order\n0. Back to Main Menu",
 }
 # handle user input function to navigate between menus 
@@ -92,6 +92,23 @@ _router: Dict[str, MenuFunctions] = {
     "2.1": MenuFunctions(executor=lambda: view_users([db.query_user(u["username"]) for u in db.users]), navigator=lambda: constants.user_menu),
     "2.2": MenuFunctions(executor=add_user, navigator=lambda: constants.user_menu),
     "2.3": MenuFunctions(executor=delete_user, navigator=lambda: constants.user_menu),
+    # Portfolio menu (menu_id = 3)
+    "3.1": MenuFunctions(
+        executor=lambda: (lambda pid: (__import__("domain.Portfolio", fromlist=["view_holdings"]).view_holdings(pid)))(int(_console.input("Enter Portfolio ID to view: "))),
+        navigator=lambda: constants.portfolio_menu,
+    ),
+    "3.2": MenuFunctions(
+        executor=lambda: __import__("domain.Portfolio", fromlist=["create_portfolio"]).create_portfolio(),
+        navigator=lambda: constants.portfolio_menu,
+    ),
+    "3.3": MenuFunctions(
+        executor=lambda: (lambda pid: (__import__("domain.Portfolio", fromlist=["delete_portfolio"]).delete_portfolio(pid)))(int(_console.input("Enter Portfolio ID to delete: "))),
+        navigator=lambda: constants.portfolio_menu,
+    ),
+    "3.4": MenuFunctions(
+        executor=lambda: (lambda pid: (__import__("domain.Portfolio", fromlist=["liquidate_holdings"]).liquidate_holdings(pid)))(int(_console.input("Enter Portfolio ID to liquidate: "))),
+        navigator=lambda: constants.portfolio_menu,
+    ),
 }
 
 # define function to print error messages
