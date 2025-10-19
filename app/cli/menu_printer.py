@@ -15,7 +15,7 @@ _menu: Dict[int, str] = {
     constants.main_menu: "------\nMain Menu\n-----\n1. Manage Users\n2. Manage Portfolios\n3. Marketplace\n0. Logout",
     constants.user_menu: "------\nUser Menu\n-----\n1. View Users\n2. Add User\n3. Delete User\n0. Back to Main Menu",
     constants.portfolio_menu: "------\nPortfolio Menu\n-----\n1. View All Portfolios\n2. Create Portfolio\n3. Delete Portfolio\n4. Liquidate Holdings\n0. Back to Main Menu",
-    constants.marketplace_menu: "------\nMarketplace Menu\n-----\n1. View Securities\n2. Place Order\n0. Back to Main Menu",
+    constants.marketplace_menu: "------\nMarketplace Menu\n-----\n1. View Securities\n2. Place Order\n3. Add Cash\n0. Back to Main Menu",
 }
 # handle user input function to navigate between menus 
 def handle_user_input(menu_id: int, user_input: str):
@@ -103,6 +103,19 @@ _router: Dict[str, MenuFunctions] = {
     "3.4": MenuFunctions(
         executor=lambda: __import__("domain.Portfolio", fromlist=["partial_liquidate_holdings"]).partial_liquidate_holdings(),
         navigator=lambda: constants.portfolio_menu,
+    ),
+    # Marketplace menu (menu_id = 4)
+    "4.1": MenuFunctions(
+        executor=lambda: __import__("domain.Portfolio", fromlist=["view_all_securities"]).view_all_securities(),
+        navigator=lambda: constants.marketplace_menu,
+    ),
+    "4.2": MenuFunctions(
+        executor=lambda: __import__("domain.Portfolio", fromlist=["place_order"]).place_order(),
+        navigator=lambda: constants.marketplace_menu,
+    ),
+    "4.3": MenuFunctions(
+        executor=lambda: __import__("domain.Portfolio", fromlist=["add_cash_to_portfolio"]).add_cash_to_portfolio(),
+        navigator=lambda: constants.marketplace_menu,
     ),
 }
 
