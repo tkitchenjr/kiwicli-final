@@ -58,21 +58,31 @@ Securities = [
     {
         "symbol": "AAPL",
         "name": "Apple Inc.",
-        "price": 250.00},
+        "price": 250.00,
+        "issuer": "CME"
+    },
     {
         "symbol": "MSFT",
         "name": "Microsoft Corporation",
-        "price": 500.00},
+        "price": 500.00,
+        "issuer": "CME"
+    },
     {
         "symbol": "AMZN",
         "name": "Amazon",
-        "price": 280.00},  
+        "price": 280.00,
+        "issuer": "CME"
+    },  
     {
         "symbol": "NVDA",
         "name": "Microsoft Corporation",
-        "price": 200.00},
+        "price": 200.00,
+        "issuer": "CME"
+    },
     {
         "symbol": "BTC",
         "name": "Bitcoin",
-        "price": 105000}
+        "price": 105000,
+        "issuer": "CME"
+    }
 ]
