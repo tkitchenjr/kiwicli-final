@@ -21,6 +21,19 @@ def query_user(username: str) -> User|None:
             return User(**user)
     return None
 
+def delete_user(username: str) -> bool:
+    """
+    Deletes a user by username. Returns True if deleted, False if not found or blocked.
+    Admin account cannot be deleted.
+    """
+    if username.strip().lower() == "admin":
+        return False
+    idx = next((i for i, u in enumerate(users) if u.get("username") == username), None)
+    if idx is None:
+        return False
+    del users[idx]
+    return True
+
 #create Portfolio list
 portfolios = [
     {
