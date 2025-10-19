@@ -92,6 +92,85 @@ def view_holdings(portfolio_id: int) -> None:
 
     _console.print(table)
 
+# View all portfolios for the current user
+def view_all_portfolios() -> None:
+    if not session.current_user:
+        _console.print("Please log in to view portfolios.", style="red")
+        return
+    
+    # Filter portfolios for current user (admin can see all)
+    if session.current_user.username == "admin":
+        user_portfolios = db.portfolios
+    else:
+        user_portfolios = [p for p in db.portfolios if p.get("owner") == session.current_user.username]
+    
+    if not user_portfolios:
+        _console.print("You have no portfolios yet.", style="yellow")
+        return
+    
+    # Build a price lookup for securities
+    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
+    
+    # Create a summary table
+    table = Table(title=f"Portfolios for {session.current_user.firstname}")
+    table.add_column("ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Name", justify="center", style="yellow", no_wrap=True)
+    table.add_column("Description", justify="center", style="white", no_wrap=True)
+    table.add_column("Holdings Count", justify="center", style="magenta", no_wrap=True)
+    table.add_column("Total Value", justify="center", style="green", no_wrap=True)
+    
+    for portfolio in user_portfolios:
+        portfolio_id = portfolio.get("portfolio_id", "N/A")
+        name = portfolio.get("name", "Unnamed")
+        description = portfolio.get("description", "")
+        holdings_raw = portfolio.get("holdings", [])
+        
+        # Count holdings and calculate total value
+        normalized: list[tuple[str, int]] = []
+        
+        def add_pair(sym: str, qty_val) -> None:
+            try:
+                qty = int(qty_val)
+            except Exception:
+                qty = 1
+            if sym:
+                normalized.append((sym.strip(), qty))
+        
+        if isinstance(holdings_raw, dict):
+            for sym, qty in holdings_raw.items():
+                add_pair(sym, qty)
+        elif isinstance(holdings_raw, (list, set, tuple)):
+            for item in holdings_raw:
+                if isinstance(item, dict):
+                    add_pair(item.get("symbol"), item.get("qty", 1))
+                elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                    add_pair(str(item[0]), item[1])
+                elif isinstance(item, str):
+                    parts = [p.strip() for p in item.split(",") if p.strip()]
+                    if len(parts) > 1:
+                        for sym in parts:
+                            add_pair(sym, 1)
+                    else:
+                        add_pair(item, 1)
+                else:
+                    add_pair(str(item), 1)
+        elif isinstance(holdings_raw, str):
+            for sym in [p.strip() for p in holdings_raw.split(",") if p.strip()]:
+                add_pair(sym, 1)
+        
+        holdings_count = len(normalized)
+        total_value = sum(price_by_symbol.get(sym, 0.0) * qty for sym, qty in normalized)
+        
+        table.add_row(
+            str(portfolio_id),
+            name,
+            description,
+            str(holdings_count),
+            f"${total_value:,.2f}"
+        )
+    
+    _console.print(table)
+
 # Create a new portfolio
 def create_portfolio() -> None:
     if not session.current_user:

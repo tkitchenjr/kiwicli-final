@@ -1,6 +1,9 @@
 # define starting user dictionary
 
-from domain.User import User
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from domain.User import User
 
 
 #create User list
@@ -15,7 +18,9 @@ users = [
 ]
 
 #create query user method
-def query_user(username: str) -> User|None:
+def query_user(username: str):
+    # Import User here to avoid circular import at module level
+    from domain.User import User
     for user in users:
         if user["username"] == username:
             return User(**user)
@@ -24,10 +29,13 @@ def query_user(username: str) -> User|None:
 def delete_user(username: str) -> bool:
     """
     Deletes a user by username. Returns True if deleted, False if not found or blocked.
-    Admin account cannot be deleted.
+    Admin account cannot be deleted. User cannot be deleted if they own any portfolios.
     """
     if username.strip().lower() == "admin":
         return False
+    # Block deletion if user owns any portfolios
+    if any(p.get("owner") == username for p in portfolios):
+        return "has_portfolios"
     idx = next((i for i, u in enumerate(users) if u.get("username") == username), None)
     if idx is None:
         return False

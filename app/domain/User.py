@@ -1,6 +1,8 @@
+
 from rich.console import Console
-from rich.table import Table 
+from rich.table import Table
 from typing import Dict
+import db
 
 _console = Console()
 
@@ -33,6 +35,10 @@ def add_user(username:str = None, password:str = None, firstname:str = None, las
 	_console.print("\n   Add New User   ", style="yellow")
 	if username is None:
 		username = _console.input("Username: ")
+	# Check for duplicate username
+	if any(u["username"].lower() == username.strip().lower() for u in db.users):
+		_console.print(f"Error: Duplicate username '{username}'. Please choose a different username.", style="red")
+		return
 	if password is None:
 		password = _console.input("Password: ")
 	if firstname is None:
@@ -59,12 +65,35 @@ def add_user(username:str = None, password:str = None, firstname:str = None, las
 
 # define function to delete user interactively
 def delete_user() -> None:
-    import db
-    _console.print("\n   Delete User   ", style="yellow")
-    username = _console.input("Enter username to delete: ")
-    
-    if not db.delete_user(username):
-        _console.print("Cannot delete this user (either not found or admin).", style="red")
-        return
-    
-    _console.print(f"User '{username}' deleted.", style="green")
+	_console.print("\n   Delete User   ", style="yellow")
+	username = _console.input("Enter username to delete: ")
+
+	# Check if user is admin
+	if username.strip().lower() == "admin":
+		_console.print("Cannot delete admin account.", style="red")
+		return
+
+	# Check for portfolios owned by user
+	user_portfolios = [p for p in db.portfolios if p.get("owner") == username]
+	if user_portfolios:
+		_console.print(f"User '{username}' owns {len(user_portfolios)} portfolio(s).", style="red")
+		remove_choice = _console.input("Would you like to remove all portfolios for this user? (Y/N): ").strip().lower()
+		if remove_choice == "y":
+			for p in user_portfolios:
+				db.portfolios.remove(p)
+			_console.print(f"All portfolios for '{username}' have been removed.", style="green")
+			confirm_delete = _console.input(f"Would you like to delete user '{username}' now? (Y/N): ").strip().lower()
+			if confirm_delete != "y":
+				_console.print("User deletion cancelled.", style="yellow")
+				return
+		else:
+			_console.print("User deletion cancelled. Please remove portfolios first if you wish to proceed.", style="yellow")
+			return
+
+	# Proceed to delete user
+	idx = next((i for i, u in enumerate(db.users) if u.get("username") == username), None)
+	if idx is None:
+		_console.print("Cannot delete this user (either not found).", style="red")
+		return
+	del db.users[idx]
+	_console.print(f"User '{username}' deleted.", style="green")
