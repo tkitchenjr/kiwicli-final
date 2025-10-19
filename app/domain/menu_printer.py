@@ -87,7 +87,6 @@ _router: Dict[str, MenuFunctions] = {
     "2.1": MenuFunctions(executor=lambda: view_users([db.query_user(u["username"]) for u in db.users]), navigator=lambda: constants.user_menu),
     "2.2": MenuFunctions(executor=add_user, navigator=lambda: constants.user_menu),
     "2.3": MenuFunctions(executor=delete_user, navigator=lambda: constants.user_menu),
-    # Portfolio menu (menu_id = 3)
     "3.1": MenuFunctions(
         executor=lambda: __import__("domain.Portfolio", fromlist=["view_all_portfolios"]).view_all_portfolios(),
         navigator=lambda: constants.portfolio_menu,

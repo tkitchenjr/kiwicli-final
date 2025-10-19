@@ -48,6 +48,8 @@ portfolios = [
         "portfolio_id": 1,
         "name": "Tech Stocks",
         "description": "Stock & Crypto Holdings",
+        "owner": "admin",
+        "cash": 0.0,
         "holdings": {"AAPL": 10, "MSFT": 5, "AMZN": 2, "NVDA": 8, "BTC": 1}
     }
 ]

@@ -1,3 +1,127 @@
+# Partially liquidate holdings for a portfolio
+def partial_liquidate_holdings() -> None:
+    _console.print("\n   Partial Liquidation   ", style="yellow")
+    try:
+        pid_str = _console.input("Enter Portfolio ID: ").strip()
+        pid = int(pid_str)
+    except Exception:
+        _console.print("Invalid Portfolio ID.", style="red")
+        return
+    portfolio = next((p for p in db.portfolios if p["portfolio_id"] == pid), None)
+    if not portfolio:
+        _console.print(f"Portfolio ID {pid} not found.", style="red")
+        return
+    if session.current_user.username != "admin" and portfolio.get("owner") != session.current_user.username:
+        _console.print("Access denied: you cannot modify another user's portfolio.", style="red")
+        return
+    holdings = portfolio.get("holdings", {})
+    # Normalize holdings to dict for easier handling
+    if isinstance(holdings, dict):
+        holdings_dict = holdings
+    elif isinstance(holdings, (list, set, tuple)):
+        holdings_dict = {}
+        for item in holdings:
+            if isinstance(item, dict) and "symbol" in item and "qty" in item:
+                holdings_dict[item["symbol"]] = item["qty"]
+            elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                holdings_dict[str(item[0])] = item[1]
+            elif isinstance(item, str):
+                for sym in [p.strip() for p in item.split(",") if p.strip()]:
+                    holdings_dict[sym] = 1
+    elif isinstance(holdings, str):
+        holdings_dict = {sym: 1 for sym in [p.strip() for p in holdings.split(",") if p.strip()]}
+    else:
+        holdings_dict = {}
+
+    if not holdings_dict:
+        _console.print("No holdings to liquidate.", style="yellow")
+        return
+
+    full_liq = _console.input("Liquidate all holdings in this portfolio? (Y/N): ").strip().upper()
+    
+    if full_liq == "Y":
+        # Liquidate all holdings at current market price automatically
+        total_proceeds = 0.0
+        for ticker, orig_qty in list(holdings_dict.items()):
+            current_price = next((s["price"] for s in db.Securities if s["symbol"] == ticker), None)
+            if current_price is None:
+                _console.print(f"Security '{ticker}' not found in Securities list. Skipping.", style="red")
+                continue
+            
+            proceeds = orig_qty * current_price
+            total_proceeds += proceeds
+            holdings_dict.pop(ticker)
+            _console.print(f"Liquidated {orig_qty} of {ticker} at current market price ${current_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
+        
+        # Update portfolio with cleared holdings and add proceeds to cash
+        portfolio["holdings"] = holdings_dict
+        portfolio["cash"] = portfolio.get("cash", 0.0) + total_proceeds
+        _console.print(f"\nTotal proceeds: ${total_proceeds:,.2f}", style="green bold")
+        _console.print(f"New cash balance: ${portfolio['cash']:,.2f}", style="green bold")
+        return
+    elif full_liq == "N":
+        # Partial liquidation - ask for ONE specific security
+        # Loop until valid ticker is entered
+        while True:
+            ticker = _console.input("Enter ticker to liquidate: ").strip().upper()
+            if not ticker:
+                _console.print("Ticker cannot be empty.", style="red")
+                continue
+            if ticker not in holdings_dict:
+                _console.print(f"Security '{ticker}' not found in holdings.", style="red")
+                _console.print(f"Available securities: {', '.join(holdings_dict.keys())}", style="yellow")
+                continue
+            break  # Valid ticker found
+        
+        orig_qty = holdings_dict[ticker]
+        current_price = next((s["price"] for s in db.Securities if s["symbol"] == ticker), None)
+        if current_price is None:
+            _console.print(f"Security '{ticker}' not found in Securities list.", style="red")
+            return
+        
+        _console.print(f"You own {orig_qty} of {ticker} (current market price: ${current_price:,.2f})")
+        
+        # Loop until valid quantity is entered
+        while True:
+            qty_str = _console.input(f"Enter quantity to liquidate (max {orig_qty}): ").strip()
+            try:
+                qty = float(qty_str)
+                if qty <= 0:
+                    _console.print("Quantity must be greater than 0.", style="red")
+                    continue
+                if qty > orig_qty:
+                    _console.print(f"Cannot liquidate more than you own. Max available: {orig_qty}", style="red")
+                    continue
+                break  # Valid quantity entered
+            except ValueError:
+                _console.print("Invalid quantity. Please enter a numeric value.", style="red")
+        
+        # Loop until valid sale price is entered
+        while True:
+            sale_price_str = _console.input(f"Enter sale price per unit (current: ${current_price:,.2f}): ").strip()
+            try:
+                sale_price = float(sale_price_str)
+                if sale_price <= 0:
+                    _console.print("Sale price must be greater than 0.", style="red")
+                    continue
+                break  # Valid price entered
+            except ValueError:
+                _console.print("Invalid sale price. Please enter a numeric value.", style="red")
+        
+        proceeds = qty * sale_price
+        holdings_dict[ticker] = orig_qty - qty
+        if holdings_dict[ticker] == 0:
+            holdings_dict.pop(ticker)
+        
+        # Update portfolio holdings and add proceeds to cash
+        portfolio["holdings"] = holdings_dict
+        portfolio["cash"] = portfolio.get("cash", 0.0) + proceeds
+        _console.print(f"Liquidated {qty} of {ticker} at ${sale_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
+        _console.print(f"New cash balance: ${portfolio['cash']:,.2f}", style="green bold")
+        return
+    else:
+        _console.print("Invalid choice. Please enter Y or N.", style="red")
+        return
 
 from rich.console import Console
 from rich.table import Table
@@ -73,6 +197,10 @@ def view_holdings(portfolio_id: int) -> None:
         for sym in [p.strip() for p in holdings_raw.split(",") if p.strip()]:
             add_pair(sym, 1)
 
+    # Show cash balance
+    cash_balance = portfolio.get("cash", 0.0)
+    _console.print(f"\nCash Balance: ${cash_balance:,.2f}", style="green bold")
+    
     # Render table
     table = Table(title=f"Holdings for Portfolio {portfolio['name']}")
     table.add_column("Security", style="yellow", justify="center", no_wrap=True)
@@ -86,9 +214,12 @@ def view_holdings(portfolio_id: int) -> None:
         total_value += balance
         table.add_row(sym, str(qty), f"${balance:,.2f}")
 
-    # Add a footer row with total
+    # Add footer rows with subtotal, cash, and total
     if normalized:
-        table.add_row("", "", f"${total_value:,.2f}")
+        table.add_row("", "SUBTOTAL", f"${total_value:,.2f}")
+    table.add_row("", "CASH", f"${cash_balance:,.2f}")
+    total_with_cash = total_value + cash_balance
+    table.add_row("", "TOTAL", f"${total_with_cash:,.2f}")
 
     _console.print(table)
 
@@ -117,6 +248,7 @@ def view_all_portfolios() -> None:
     table.add_column("Name", justify="center", style="yellow", no_wrap=True)
     table.add_column("Description", justify="center", style="white", no_wrap=True)
     table.add_column("Holdings Count", justify="center", style="magenta", no_wrap=True)
+    table.add_column("Cash", justify="center", style="green", no_wrap=True)
     table.add_column("Total Value", justify="center", style="green", no_wrap=True)
     
     for portfolio in user_portfolios:
@@ -159,13 +291,16 @@ def view_all_portfolios() -> None:
                 add_pair(sym, 1)
         
         holdings_count = len(normalized)
-        total_value = sum(price_by_symbol.get(sym, 0.0) * qty for sym, qty in normalized)
+        holdings_value = sum(price_by_symbol.get(sym, 0.0) * qty for sym, qty in normalized)
+        cash_balance = portfolio.get("cash", 0.0)
+        total_value = holdings_value + cash_balance
         
         table.add_row(
             str(portfolio_id),
             name,
             description,
             str(holdings_count),
+            f"${cash_balance:,.2f}",
             f"${total_value:,.2f}"
         )
     
@@ -199,9 +334,10 @@ def create_portfolio() -> None:
         "name": name,
         "description": description,
         "owner": session.current_user.username,
+        "cash": 0.0,
         "holdings": []
     })
-    _console.print(f"Portfolio '{name}' created with ID {new_id}.", style="green")
+    _console.print(f"Portfolio '{name}' created with ID {new_id} with $0.00 cash.", style="green")
 
 # Delete a portfolio by ID
 def delete_portfolio(portfolio_id: int) -> None:
