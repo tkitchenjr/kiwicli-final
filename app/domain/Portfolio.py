@@ -1,6 +1,6 @@
 # Partially liquidate holdings for a portfolio
 def partial_liquidate_holdings() -> None:
-    _console.print("\n   Partial Liquidation   ", style="yellow")
+    _console.print("\n   Harvest Liquidation   ", style="yellow")
     try:
         pid_str = _console.input("Enter Portfolio ID: ").strip()
         pid = int(pid_str)
