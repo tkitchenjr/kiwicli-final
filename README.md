@@ -1,5 +1,6 @@
-
-````markdown
+Credentials to Log in as admin
+username: admin
+password: admin
 
 # Assignment 1 Instructions
 
