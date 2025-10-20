@@ -17,6 +17,28 @@ users = [
     }
 ]
 
+# Centralized session state: currently logged-in user object (or None)
+current_user = None
+
+# --- Helper functions: users and portfolio IDs ---
+def username_exists(username: str) -> bool:
+    return any(u.get("username", "").strip().lower() == username.strip().lower() for u in users)
+
+def add_user_record(username: str, password: str, firstname: str, lastname: str, balance: float) -> None:
+    users.append({
+        "username": username,
+        "password": password,
+        "firstname": firstname,
+        "lastname": lastname,
+        "balance": balance,
+    })
+
+def next_portfolio_id() -> int:
+    return (max([p.get("portfolio_id", 0) for p in portfolios], default=0) + 1) if portfolios else 1
+
+def is_portfolio_id_taken(pid: int) -> bool:
+    return any(p.get("portfolio_id") == pid for p in portfolios)
+
 #create query user method
 def query_user(username: str):
     # Import User here to avoid circular import at module level

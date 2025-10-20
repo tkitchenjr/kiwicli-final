@@ -1,10 +1,9 @@
 from cli import constants
 from rich.console import Console
 from typing import Dict, Tuple 
-from domain.User import view_users
+from services.user_services import render_users
 from domain.MenuFunctions import MenuFunctions
 import db 
-import session
 
 
 
@@ -63,17 +62,17 @@ def login():
         user = db.query_user(username)
         if not user or user.password != password:
             raise Exception("Invalid username or password")
-        session.current_user = user
+        db.current_user = user
         _console.print(f"\nWelcome, {user.firstname}!", style="green")
     except Exception as e:
         raise Exception(f"Login failed: {str(e)}")
     
 # define router function to navigate between menus based on user input
 
-from domain.User import add_user, delete_user
+from services.user_services import add_user, delete_user
 
 def admin_guard():
-    if session.current_user and session.current_user.username == "admin":
+    if db.current_user and db.current_user.username == "admin":
         return constants.user_menu
     else:
         print_error("Access denied: Only admin can manage users.")
@@ -84,37 +83,37 @@ _router: Dict[str, MenuFunctions] = {
     "1.1": MenuFunctions(executor=None, navigator = admin_guard),
     "1.2": MenuFunctions(executor=None, navigator = lambda: constants.portfolio_menu),
     "1.3": MenuFunctions(executor=None, navigator = lambda: constants.marketplace_menu),
-    "2.1": MenuFunctions(executor=lambda: view_users([db.query_user(u["username"]) for u in db.users]), navigator=lambda: constants.user_menu),
+    "2.1": MenuFunctions(executor=render_users, navigator=lambda: constants.user_menu),
     "2.2": MenuFunctions(executor=add_user, navigator=lambda: constants.user_menu),
     "2.3": MenuFunctions(executor=delete_user, navigator=lambda: constants.user_menu),
     # Portfolio menu (menu_id = 3)
     "3.1": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["view_all_portfolios"]).view_all_portfolios(),
+        executor=lambda: __import__("services.portfolio_services", fromlist=["view_all_portfolios"]).view_all_portfolios(),
         navigator=lambda: constants.portfolio_menu,
     ),
     "3.2": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["create_portfolio"]).create_portfolio(),
+        executor=lambda: __import__("services.portfolio_services", fromlist=["create_portfolio"]).create_portfolio(),
         navigator=lambda: constants.portfolio_menu,
     ),
     "3.3": MenuFunctions(
-        executor=lambda: (lambda pid: (__import__("domain.Portfolio", fromlist=["delete_portfolio"]).delete_portfolio(pid)))(int(_console.input("Enter Portfolio ID to delete: "))),
+        executor=lambda: (lambda pid: (__import__("services.portfolio_services", fromlist=["delete_portfolio"]).delete_portfolio(pid)))(int(_console.input("Enter Portfolio ID to delete: "))),
         navigator=lambda: constants.portfolio_menu,
     ),
     "3.4": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["partial_liquidate_holdings"]).partial_liquidate_holdings(),
+        executor=lambda: __import__("services.portfolio_services", fromlist=["partial_liquidate_holdings"]).partial_liquidate_holdings(),
         navigator=lambda: constants.portfolio_menu,
     ),
     # Marketplace menu (menu_id = 4)
     "4.1": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["view_all_securities"]).view_all_securities(),
+        executor=lambda: __import__("services.security_services", fromlist=["view_all_securities"]).view_all_securities(),
         navigator=lambda: constants.marketplace_menu,
     ),
     "4.2": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["place_order"]).place_order(),
+        executor=lambda: __import__("services.security_services", fromlist=["place_order"]).place_order(),
         navigator=lambda: constants.marketplace_menu,
     ),
     "4.3": MenuFunctions(
-        executor=lambda: __import__("domain.Portfolio", fromlist=["add_cash_to_portfolio"]).add_cash_to_portfolio(),
+        executor=lambda: __import__("services.security_services", fromlist=["add_cash_to_portfolio"]).add_cash_to_portfolio(),
         navigator=lambda: constants.marketplace_menu,
     ),
 }
@@ -122,8 +121,6 @@ _router: Dict[str, MenuFunctions] = {
 # define function to print error messages
 def print_error(error: str):
     _console.print(error, style='red')
-
-
 
 # define function to print menus
 def print_menu(menu_type: int) -> None:
