@@ -1,5 +1,36 @@
+Credentials to Log in as admin
+username: admin
+password: admin
 
 # Assignment 1 Instructions
+
+## Quick Start
+
+1. Clone the repository
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r app/requirements.txt
+   ```
+4. Run the application:
+   ```bash
+   python3 app/main.py
+   ```
+
+### Default Login Credentials
+
+- **Username:** `admin`
+- **Password:** `admin`
+
+See [CREDENTIALS.md](CREDENTIALS.md) for more details.
+
+---
+
+# Original Assignment Instructions
 
 Please read the following instructions carefully to ensure proper submission and compliance with the application requirements.
 
