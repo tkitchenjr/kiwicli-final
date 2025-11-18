@@ -1,7 +1,7 @@
 from typing import List
 from rich.console import Console
 from rich.table import Table
-import db
+import app.db as db
 
 from domain.User import User
 

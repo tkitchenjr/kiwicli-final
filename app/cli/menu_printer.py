@@ -2,9 +2,8 @@ from cli import constants
 from rich.console import Console
 from typing import Dict, Tuple 
 from services.user_services import render_users
-from domain.MenuFunctions import MenuFunctions
-import db 
-
+from app.domain.MenuFunctions import MenuFunctions
+import app.db as db 
 
 
 _console = Console()
