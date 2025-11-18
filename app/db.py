@@ -36,9 +36,6 @@ def add_user_record(username: str, password: str, firstname: str, lastname: str,
 def next_portfolio_id() -> int:
     return (max([p.get("portfolio_id", 0) for p in portfolios], default=0) + 1) if portfolios else 1
 
-def is_portfolio_id_taken(pid: int) -> bool:
-    return any(p.get("portfolio_id") == pid for p in portfolios)
-
 #create query user method
 def query_user(username: str):
     # Import User here to avoid circular import at module level

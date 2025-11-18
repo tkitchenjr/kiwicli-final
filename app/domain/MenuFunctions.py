@@ -8,4 +8,4 @@ class MenuFunctions:
    def __init__(self, executor: Callable|None = None, navigator: Callable|None = None, printer: Callable| None = None):
         self.executor = executor
         self.navigator = navigator
-        self.printer = printer
+        self.printer = printer 
