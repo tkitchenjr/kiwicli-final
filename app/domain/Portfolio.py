@@ -1,7 +1,5 @@
-from dataclasses import dataclass
+from domain.Investment import Investment
 
-
-@dataclass
 class Portfolio:
     def __init__(self, portfolio_id: int, name: str, description: str, holdings: list):
         self.portfolio_id = portfolio_id

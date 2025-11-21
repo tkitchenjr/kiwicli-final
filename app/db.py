@@ -68,7 +68,6 @@ portfolios = [
         "name": "Tech Stocks",
         "description": "Stock & Crypto Holdings",
         "owner": "admin",
-        "cash": 0.0,
         "holdings": [
             Investment("AAPL", 10, 250.00),
             Investment("MSFT", 5, 500.00),
