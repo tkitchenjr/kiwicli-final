@@ -1,5 +1,5 @@
 # define starting user dictionary
-
+from domain.Investment import Investment 
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -69,7 +69,13 @@ portfolios = [
         "description": "Stock & Crypto Holdings",
         "owner": "admin",
         "cash": 0.0,
-        "holdings": {"AAPL": 10, "MSFT": 5, "AMZN": 2, "NVDA": 8, "BTC": 1}
+        "holdings": [
+            Investment("AAPL", 10, 250.00),
+            Investment("MSFT", 5, 500.00),
+            Investment("AMZN", 2, 280.00),
+            Investment("NVDA", 8, 200.00),
+            Investment("BTC", 1, 105000.00)
+        ]
     }
 ]
 #create Security list
