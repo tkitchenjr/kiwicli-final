@@ -1,10 +1,9 @@
 # define starting user dictionary
 from domain.Investment import Investment 
-
+from domain.User import User
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from domain.User import User
-
 
 #create User list
 users = [
@@ -38,8 +37,6 @@ def next_portfolio_id() -> int:
 
 #create query user method
 def query_user(username: str):
-    # Import User here to avoid circular import at module level
-    from domain.User import User
     for user in users:
         if user["username"] == username:
             return User(**user)

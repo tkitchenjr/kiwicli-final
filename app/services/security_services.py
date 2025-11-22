@@ -1,7 +1,7 @@
 import rich
 from rich.console import Console
 from rich.table import Table
-import app.db as db
+import db 
 
 _console = Console()
 
