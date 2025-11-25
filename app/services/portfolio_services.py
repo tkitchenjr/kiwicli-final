@@ -1,5 +1,6 @@
 from rich.console import Console
 from rich.table import Table
+from domain.Investment import Investment
 import db
 
 _console = Console()
@@ -148,7 +149,7 @@ def view_holdings(portfolio_id: int) -> None:
         _console.print("Access denied: you cannot view another user's portfolio.", style="red")
         return
     
-    holdings_raw = portfolio.get("holdings", [])
+    holdings = portfolio.get("holdings", [])
 
     # Build a price lookup for securities
     price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
@@ -164,12 +165,12 @@ def view_holdings(portfolio_id: int) -> None:
         if sym:
             normalized.append((sym.strip(), qty))
 
-    if isinstance(holdings_raw, dict):
+    if isinstance(holdings, dict):
         # {"AAPL": 10, "MSFT": 5}
-        for sym, qty in holdings_raw.items():
+        for sym, qty in holdings.items():
             add_pair(sym, qty)
-    elif isinstance(holdings_raw, (list, set, tuple)):
-        for item in holdings_raw:
+    elif isinstance(holdings, (list, set, tuple)):
+        for item in holdings:
             if isinstance(item, dict):
                 # {"symbol": "AAPL", "qty": 10}
                 add_pair(item.get("symbol"), item.get("qty", 1))
@@ -186,9 +187,9 @@ def view_holdings(portfolio_id: int) -> None:
             else:
                 # Fallback: string conversion
                 add_pair(str(item), 1)
-    elif isinstance(holdings_raw, str):
+    elif isinstance(holdings, str):
         # Single string possibly comma-separated
-        for sym in [p.strip() for p in holdings_raw.split(",") if p.strip()]:
+        for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
             add_pair(sym, 1)
 
     # Show cash balance
@@ -249,7 +250,7 @@ def view_all_portfolios() -> None:
         portfolio_id = portfolio.get("portfolio_id", "N/A")
         name = portfolio.get("name", "Unnamed")
         description = portfolio.get("description", "")
-        holdings_raw = portfolio.get("holdings", [])
+        holdings = portfolio.get("holdings", [])
         
         # Count holdings and calculate total value
         normalized: list[tuple[str, int]] = []
@@ -262,11 +263,11 @@ def view_all_portfolios() -> None:
             if sym:
                 normalized.append((sym.strip(), qty))
         
-        if isinstance(holdings_raw, dict):
-            for sym, qty in holdings_raw.items():
+        if isinstance(holdings, dict):
+            for sym, qty in holdings.items():
                 add_pair(sym, qty)
-        elif isinstance(holdings_raw, (list, set, tuple)):
-            for item in holdings_raw:
+        elif isinstance(holdings, (list, set, tuple)):
+            for item in holdings:
                 if isinstance(item, dict):
                     add_pair(item.get("symbol"), item.get("qty", 1))
                 elif isinstance(item, (list, tuple)) and len(item) >= 2:
@@ -280,8 +281,8 @@ def view_all_portfolios() -> None:
                         add_pair(item, 1)
                 else:
                     add_pair(str(item), 1)
-        elif isinstance(holdings_raw, str):
-            for sym in [p.strip() for p in holdings_raw.split(",") if p.strip()]:
+        elif isinstance(holdings, str):
+            for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
                 add_pair(sym, 1)
         
         holdings_count = len(normalized)
@@ -327,11 +328,10 @@ def create_portfolio() -> None:
         "portfolio_id": new_id,
         "name": name,
         "description": description,
-    "owner": db.current_user.username,
-        "cash": 0.0,
+        "owner": db.current_user.username,
         "holdings": []
     })
-    _console.print(f"Portfolio '{name}' created with ID {new_id} with $0.00 cash.", style="green")
+    _console.print(f"Portfolio '{name}' created with ID {new_id}.", style="green")
 
 
 def delete_portfolio(portfolio_id: int) -> None:
