@@ -1,5 +1,6 @@
 from rich.console import Console
 from rich.table import Table
+from domain.Investment import Investment
 import db 
 
 _console = Console()
@@ -73,24 +74,25 @@ def place_order() -> None:
     # update balance to reflect total
     db.current_user.balance -= cost
 
-    # ammend security to portfolio holdings (normalized as dict)
-    holdings = portfolio.get("holdings", {})
-    holdings_dict: dict[str, float] = {}
-    if isinstance(holdings, dict):
-        holdings_dict = holdings
-    elif isinstance(holdings, (list, set, tuple)):
-        for item in holdings:
-            if isinstance(item, dict) and "symbol" in item and "qty" in item:
-                holdings_dict[item["symbol"]] = holdings_dict.get(item["symbol"], 0) + float(item["qty"])
-            elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                sym = str(item[0])
-                holdings_dict[sym] = holdings_dict.get(sym, 0) + float(item[1])
-            elif isinstance(item, str):
-                holdings_dict[item] = holdings_dict.get(item, 0) + 1
-    # Add purchased quantity
-    holdings_dict[ticker] = holdings_dict.get(ticker, 0) + qty
-    portfolio["holdings"] = holdings_dict
+    # ammend security to portfolio holdings 
+    holdings = portfolio.get("holdings", [])
 
+    # Check if we already own this security - if so, update quantity
+    existing_investment = None
+    for investment in holdings:
+        if isinstance(investment, Investment) and investment.ticker == ticker:
+            existing_investment = investment
+            break
+    
+    if existing_investment:
+        # Add to existing position
+        existing_investment.qty += qty
+        _console.print(f"Updated existing position: {existing_investment.qty} total {ticker}", style="cyan")
+    else:
+        # Create new Investment object
+        new_investment = Investment(ticker, qty, security["price"])
+        holdings.append(new_investment)
+        _console.print(f"Created new position: {qty} of {ticker}", style="cyan")
     _console.print(
         f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}",
         style="green bold"

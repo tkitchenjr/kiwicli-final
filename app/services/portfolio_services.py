@@ -21,9 +21,6 @@ def view_all_portfolios() -> None:
         _console.print("You have no portfolios yet.", style="yellow")
         return
     
-    # Build a price lookup for securities
-    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
-    
     # Create a summary table
     table = Table(title=f"Portfolios for {db.current_user.firstname}")
     table.add_column("ID", justify="center", style="cyan", no_wrap=True)
@@ -34,11 +31,7 @@ def view_all_portfolios() -> None:
         portfolio_id = portfolio.get("portfolio_id", "N/A")
         name = portfolio.get("name", "Unnamed")
         description = portfolio.get("description", "")
-        table.add_row(
-            str(portfolio_id),
-            name,
-            description
-        )
+        table.add_row(str(portfolio_id),name,description)
     
     _console.print(table)
     _console.print(f"Available Balance: ${db.current_user.balance:,.2f}", style="green bold")
@@ -71,49 +64,9 @@ def view_holdings(portfolio_id: int) -> None:
         _console.print("Access denied: you cannot view another user's portfolio.", style="red")
         return
     holdings = portfolio.get("holdings", [])
-    balance = db.current_user.balance if db.current_user else 0.0
 
     # Build a price lookup for securities
-    securities = getattr(db, "Securities", [])
-    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in securities}
-
-    # Normalize holdings into a list of (symbol, qty) tuples
-    normalized: list[tuple[str, int]] = []
-
-    def add_pair(sym: str, qty_val) -> None:
-        try:
-            qty = int(qty_val)
-        except Exception:
-            qty = 1
-        if sym:
-            normalized.append((sym.strip(), qty))
-
-    if isinstance(holdings, dict):
-        # {"AAPL": 10, "MSFT": 5}
-        for sym, qty in holdings.items():
-            add_pair(sym, qty)
-    elif isinstance(holdings, (list, set, tuple)):
-        for item in holdings:
-            if isinstance(item, dict):
-                # {"symbol": "AAPL", "qty": 10}
-                add_pair(item.get("symbol"), item.get("qty", 1))
-            elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                add_pair(str(item[0]), item[1])
-            elif isinstance(item, str):
-                # Could be "AAPL" or "AAPL,MSFT" (comma-separated)
-                parts = [p.strip() for p in item.split(",") if p.strip()]
-                if len(parts) > 1:
-                    for sym in parts:
-                        add_pair(sym, 1)
-                else:
-                    add_pair(item, 1)
-            else:
-                # Fallback: string conversion
-                add_pair(str(item), 1)
-    elif isinstance(holdings, str):
-        # Single string possibly comma-separated
-        for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
-            add_pair(sym, 1)
+    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in db.Securities}
     
     # Render table
     table = Table(title=f"Holdings for Portfolio: {portfolio['name']}")
@@ -121,15 +74,24 @@ def view_holdings(portfolio_id: int) -> None:
     table.add_column("Qty", style="cyan", justify="center", no_wrap=True)
     table.add_column("Balance", style="green", justify="center", no_wrap=True)
 
+    if not holdings:
+        _console.print("No holdings in this portfolio.", style="yellow")
+        return
+
     total_value = 0.0
-    for sym, qty in normalized:
-        price = price_by_symbol.get(sym, 0.0)
-        balance = price * qty
-        total_value += balance
-        table.add_row(sym, str(qty), f"${balance:,.2f}")
+
+    # handle investment objects
+    for holding in holdings:
+        if isinstance(holding, Investment):
+            sym = holding.ticker
+            qty = holding.qty
+            price = price_by_symbol.get(sym, 0.0)
+            balance = price * qty
+            total_value += balance
+            table.add_row(sym, str(qty), f"${balance:,.2f}")
 
     # Add footer rows with subtotal, cash, and total
-    if normalized:
+    if holdings:
         table.add_row("", "TOTAL", f"${total_value:,.2f}")
 
     _console.print(table)

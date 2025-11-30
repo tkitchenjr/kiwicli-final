@@ -34,7 +34,6 @@ def add_user_record(username: str, password: str, firstname: str, lastname: str,
 
 def next_portfolio_id() -> int:
     return (max([p.get("portfolio_id", 0) for p in portfolios], default=0) + 1) if portfolios else 1
-
 #create query user method
 def query_user(username: str):
     for user in users:
@@ -57,11 +56,10 @@ def delete_user(username: str) -> bool:
         return False
     del users[idx]
     return True
-
 #create Portfolio list
 portfolios = [
     {
-        "portfolio_id": 1,
+        "portfolio_id":1,
         "name": "Tech Stocks",
         "description": "Stock & Crypto Holdings",
         "owner": "admin",
