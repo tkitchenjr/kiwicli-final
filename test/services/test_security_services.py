@@ -1,7 +1,7 @@
+import rich
 from rich.console import Console
 from rich.table import Table
-from domain.Investment import Investment
-import db 
+import app.db as db
 
 _console = Console()
 
@@ -20,6 +20,7 @@ def view_all_securities() -> None:
             f"${sec.get('price', 0):,.2f}"
         )
     _console.print(table)
+
 
 def place_order() -> None:
     if not db.current_user:
@@ -64,38 +65,23 @@ def place_order() -> None:
     # Calculate cost
     cost = qty * security["price"]
     _console.print(f"Order: {qty} x {ticker} @ ${security['price']:,.2f} = ${cost:,.2f}", style="green")
-   # balance requirement
+    # Check user balance
     if cost > db.current_user.balance:
-        _console.print(
-            f"Insufficient balance to complete the purchase. Available: ${db.current_user.balance:,.2f}",
-            style="red"
-        )
+        _console.print(f"Insufficient funds. Available balance is ${db.current_user.balance:,.2f}, but purchase cost is ${cost:,.2f}.", style="red")
         return
-    # update balance to reflect total
+    # Deduct cost from user balance and add investment to holdings
     db.current_user.balance -= cost
-
-    # ammend security to portfolio holdings 
-    holdings = portfolio.get("holdings", [])
-
-    # Check if we already own this security - if so, update quantity
-    existing_investment = None
-    for investment in holdings:
-        if isinstance(investment, Investment) and investment.ticker == ticker:
-            existing_investment = investment
-            break
-    
-    if existing_investment:
-        # Add to existing position
-        existing_investment.qty += qty
-        _console.print(f"Updated existing position: {existing_investment.qty} total {ticker}", style="cyan")
+    holdings = portfolio.get("holdings", {})
+    holdings_dict = {}
+    if isinstance(holdings, dict):
+        holdings_dict = holdings
+    elif isinstance(holdings, list):
+        # If holdings is a list, convert to dict
+        for item in holdings:
+            if isinstance(item, dict) and "symbol" in item and "qty" in item:
+                holdings_dict[item["symbol"]] = holdings_dict.get(item["symbol"], 0) + item["qty"]
     else:
-        # Create new Investment object
-        new_investment = Investment(ticker, qty, security["price"])
-        holdings.append(new_investment)
-        _console.print(f"Created new position: {qty} of {ticker}", style="cyan")
-    _console.print(
-        f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}",
-        style="green bold"
-    )
-
-
+        holdings_dict = {}
+    holdings_dict[ticker] = holdings_dict.get(ticker, 0) + qty
+    portfolio["holdings"] = holdings_dict
+    _console.print(f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}", style="green bold")

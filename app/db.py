@@ -1,10 +1,9 @@
 # define starting user dictionary
-
-
+from domain.Investment import Investment 
+from domain.User import User
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from domain.User import User
-
 
 #create User list
 users = [
@@ -35,23 +34,20 @@ def add_user_record(username: str, password: str, firstname: str, lastname: str,
 
 def next_portfolio_id() -> int:
     return (max([p.get("portfolio_id", 0) for p in portfolios], default=0) + 1) if portfolios else 1
-
 #create query user method
 def query_user(username: str):
-    # Import User here to avoid circular import at module level
-    from domain.User import User
     for user in users:
         if user["username"] == username:
             return User(**user)
     return None
 
 def delete_user(username: str) -> bool:
-    """
-    Deletes a user by username. Returns True if deleted, False if not found or blocked.
-    Admin account cannot be deleted. User cannot be deleted if they own any portfolios.
-    """
+    # Deletes a user by username. Returns True if deleted, False if not found or blocked.
+    # Admin account cannot be deleted. User cannot be deleted if they own any portfolios.
+    
     if username.strip().lower() == "admin":
         return False
+    
     # Block deletion if user owns any portfolios
     if any(p.get("owner") == username for p in portfolios):
         return "has_portfolios"
@@ -60,16 +56,20 @@ def delete_user(username: str) -> bool:
         return False
     del users[idx]
     return True
-
 #create Portfolio list
 portfolios = [
     {
-        "portfolio_id": 1,
+        "portfolio_id":1,
         "name": "Tech Stocks",
         "description": "Stock & Crypto Holdings",
         "owner": "admin",
-        "cash": 0.0,
-        "holdings": {"AAPL": 10, "MSFT": 5, "AMZN": 2, "NVDA": 8, "BTC": 1}
+        "holdings": [
+            Investment("AAPL", 10, 250.00),
+            Investment("MSFT", 5, 500.00),
+            Investment("AMZN", 2, 280.00),
+            Investment("NVDA", 8, 200.00),
+            Investment("BTC", 1, 105000.00)
+        ]
     }
 ]
 #create Security list
