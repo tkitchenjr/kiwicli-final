@@ -2,7 +2,6 @@ from typing import List
 from rich.console import Console
 from rich.table import Table
 import db
-
 from domain.User import User
 
 _console = Console()
@@ -10,7 +9,6 @@ _console = Console()
 
 def list_users() -> List[User]:
     return [db.query_user(u["username"]) for u in db.users]
-
 
 def view_users(users: List[User]) -> None:
     table = Table(title="User List")
@@ -23,10 +21,8 @@ def view_users(users: List[User]) -> None:
             table.add_row(user.username, user.firstname, user.lastname, f"{user.balance:.2f}")
     _console.print(table)
 
-
 def render_users() -> None:
     view_users(list_users())
-
 
 def add_user(username: str | None = None, password: str | None = None,
              firstname: str | None = None, lastname: str | None = None,
@@ -53,7 +49,6 @@ def add_user(username: str | None = None, password: str | None = None,
             return
     db.add_user_record(username=username, password=password, firstname=firstname, lastname=lastname, balance=balance)
     _console.print(f"\nWelcome {username}! User added.", style="green")
-
 
 def delete_user() -> None:
     _console.print("\n   Delete User   ", style="yellow")
