@@ -1,6 +1,8 @@
+import datetime
 from rich.console import Console
 from rich.table import Table
 from domain.Investment import Investment
+import services.transaction_services as transaction_services
 import db
 
 _console = Console()
@@ -190,7 +192,7 @@ def partial_liquidate_holdings() -> None:
         # Liquidate all holdings at current market price automatically
         total_proceeds = 0.0
         for ticker, orig_qty in list(holdings_dict.items()):
-            current_price = next((s["price"] for s in db.Securities if s["symbol"] == ticker), None)
+            current_price = next((s["price"] for s in db.securities if s["symbol"] == ticker), None)
             if current_price is None:
                 _console.print(f"Security '{ticker}' not found in Securities list. Skipping.", style="red")
                 continue
@@ -198,6 +200,18 @@ def partial_liquidate_holdings() -> None:
             proceeds = orig_qty * current_price
             total_proceeds += proceeds
             holdings_dict.pop(ticker)
+
+            # Record transaction
+            transaction_services.update_transaction_record(
+            transaction_id=str(len(db.transactions) + 1),
+            user_id=db.current_user.username,
+            portfolio_id=str(portfolio["portfolio_id"]),
+            security_id=ticker,
+            transaction_type="SELL",
+            qty=int(qty),
+            price=ticker["price"],
+            timestamp=str(datetime.now())
+            )
             _console.print(f"Liquidated {orig_qty} of {ticker} at current market price ${current_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
         
         # Update portfolio with cleared holdings and add proceeds to user balance
@@ -206,6 +220,8 @@ def partial_liquidate_holdings() -> None:
         _console.print(f"\nTotal proceeds: ${total_proceeds:,.2f}", style="green bold")
         _console.print(f"New balance: ${db.current_user.balance:,.2f}", style="green bold")
         return
+    
+
     elif full_liq == "N":
         # Partial liquidation - ask for ONE specific security
         # Loop until valid ticker is entered
@@ -221,7 +237,7 @@ def partial_liquidate_holdings() -> None:
             break  # Valid ticker found
         
         orig_qty = holdings_dict[ticker]
-        current_price = next((s["price"] for s in db.Securities if s["symbol"] == ticker), None)
+        current_price = next((s["price"] for s in db.securities if s["symbol"] == ticker), None)
         if current_price is None:
             _console.print(f"Security '{ticker}' not found in Securities list.", style="red")
             return

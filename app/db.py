@@ -1,5 +1,6 @@
 # define starting user dictionary
 from domain.Investment import Investment 
+from domain.Transactions import Transactions
 from domain.User import User
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -73,7 +74,7 @@ portfolios = [
     }
 ]
 #create Security list
-Securities = [
+securities = [
     {
         "symbol": "AAPL",
         "name": "Apple Inc.",
@@ -104,4 +105,18 @@ Securities = [
         "price": 105000,
         "issuer": "CME"
     }
+]
+
+#create transaction list
+transactions = [
+        Transactions(
+        transaction_id= 1,
+        user_id= "admin",
+        portfolio_id= 1,
+        security_id= "AAPL",
+        qty= 10,
+        price= 250.00,
+        transaction_type= "BUY",
+        timestamp= "2024-01-01 10:00:00"
+    )
 ]

@@ -1,6 +1,10 @@
+import datetime
 from rich.console import Console
 from rich.table import Table
 from domain.Investment import Investment
+from services.transaction_services import update_transaction_record
+from services.transaction_services import format_timestamp
+from datetime import datetime
 import db 
 
 _console = Console()
@@ -12,7 +16,7 @@ def view_all_securities() -> None:
     table.add_column("Issuer", style="yellow", justify="center")
     table.add_column("Name", style="white", justify="center")
     table.add_column("Price", style="green", justify="center")
-    for sec in db.Securities:
+    for sec in db.securities:
         table.add_row(
             sec.get("symbol", "N/A"),
             sec.get("issuer", "N/A"),
@@ -46,7 +50,7 @@ def place_order() -> None:
             _console.print("Invalid input.", style="red")
     # Select security
     ticker = _console.input("Enter ticker to buy: ").strip().upper()
-    security = next((s for s in db.Securities if s["symbol"] == ticker), None)
+    security = next((s for s in db.securities if s["symbol"] == ticker), None)
     if not security:
         _console.print(f"Security '{ticker}' not found.", style="red")
         return
@@ -93,9 +97,23 @@ def place_order() -> None:
         new_investment = Investment(ticker, qty, security["price"])
         holdings.append(new_investment)
         _console.print(f"Created new position: {qty} of {ticker}", style="cyan")
+
+    # update transaction record
+    update_transaction_record(
+        transaction_id=str(len(db.transactions) + 1),
+        user_id=db.current_user.username,
+        portfolio_id=str(portfolio["portfolio_id"]),
+        security_id=ticker,
+        transaction_type="BUY",
+        qty=int(qty),
+        price=security["price"],
+        timestamp=format_timestamp(datetime.now())
+    )
+
     _console.print(
         f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}",
         style="green bold"
     )
+
 
 
