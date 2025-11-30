@@ -1,27 +1,28 @@
-from typing import List
-from rich.console import Console
-from rich.table import Table
-import db
+from rich import _console
+from app.services.portfolio_services import view_users, 
+from portfolio_services import 
 
-from domain.User import User
-
-_console = Console()
 
 
 def list_users() -> List[User]:
     return [db.query_user(u["username"]) for u in db.users]
 
 
-def view_users(users: List[User]) -> None:
+def test_view_users() -> None:
+    view_users = [
+        User(username="testuser1", password="pass1", firstname="Test", lastname="User1", balance=5000.00),
+        User(username="testuser2", password="pass2", firstname="Test", lastname="User2", balance=7500.50),
+        ]
+    assert view_users == 
     table = Table(title="User List")
-    table.add_column("username", justify="center", style="green", no_wrap=True)
-    table.add_column("firstname", justify="center", style='yellow', no_wrap=True)
-    table.add_column("lastname", justify="center", style='yellow', no_wrap=True)
-    table.add_column("balance", justify="center", style='yellow', no_wrap=True)
-    for user in users:
-        if user:
-            table.add_row(user.username, user.firstname, user.lastname, f"{user.balance:.2f}")
-    _console.print(table)
+        table.add_column("username", justify="center", style="green", no_wrap=True)
+        table.add_column("firstname", justify="center", style='yellow', no_wrap=True)
+        table.add_column("lastname", justify="center", style='yellow', no_wrap=True)
+        table.add_column("balance", justify="center", style='yellow', no_wrap=True)
+    for user in User:
+            if user:
+                table.add_row(user.username, user.firstname, user.lastname, f"{user.balance:.2f}")
+        _console.print(table)
 
 
 def render_users() -> None:
@@ -88,4 +89,3 @@ def delete_user() -> None:
         return
     del db.users[idx]
     _console.print(f"User '{username}' deleted.", style="green")
-

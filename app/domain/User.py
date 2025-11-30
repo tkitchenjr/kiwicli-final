@@ -1,4 +1,3 @@
-
 #define User class
 class User:
 	def __init__(self, username:str, password:str, firstname:str, lastname:str, balance:float):

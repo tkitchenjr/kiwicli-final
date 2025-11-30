@@ -43,12 +43,12 @@ def query_user(username: str):
     return None
 
 def delete_user(username: str) -> bool:
-    """
-    Deletes a user by username. Returns True if deleted, False if not found or blocked.
-    Admin account cannot be deleted. User cannot be deleted if they own any portfolios.
-    """
+    # Deletes a user by username. Returns True if deleted, False if not found or blocked.
+    # Admin account cannot be deleted. User cannot be deleted if they own any portfolios.
+    
     if username.strip().lower() == "admin":
         return False
+    
     # Block deletion if user owns any portfolios
     if any(p.get("owner") == username for p in portfolios):
         return "has_portfolios"

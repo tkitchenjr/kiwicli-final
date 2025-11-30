@@ -1,6 +1,7 @@
+import rich
 from rich.console import Console
 from rich.table import Table
-import db 
+import app.db as db
 
 _console = Console()
 
@@ -19,6 +20,7 @@ def view_all_securities() -> None:
             f"${sec.get('price', 0):,.2f}"
         )
     _console.print(table)
+
 
 def place_order() -> None:
     if not db.current_user:
@@ -63,37 +65,23 @@ def place_order() -> None:
     # Calculate cost
     cost = qty * security["price"]
     _console.print(f"Order: {qty} x {ticker} @ ${security['price']:,.2f} = ${cost:,.2f}", style="green")
-   # balance requirement
+    # Check user balance
     if cost > db.current_user.balance:
-        _console.print(
-            f"Insufficient balance to complete the purchase. Available: ${db.current_user.balance:,.2f}",
-            style="red"
-        )
+        _console.print(f"Insufficient funds. Available balance is ${db.current_user.balance:,.2f}, but purchase cost is ${cost:,.2f}.", style="red")
         return
-    # update balance to reflect total
+    # Deduct cost from user balance and add investment to holdings
     db.current_user.balance -= cost
-
-    # ammend security to portfolio holdings (normalized as dict)
     holdings = portfolio.get("holdings", {})
-    holdings_dict: dict[str, float] = {}
+    holdings_dict = {}
     if isinstance(holdings, dict):
         holdings_dict = holdings
-    elif isinstance(holdings, (list, set, tuple)):
+    elif isinstance(holdings, list):
+        # If holdings is a list, convert to dict
         for item in holdings:
             if isinstance(item, dict) and "symbol" in item and "qty" in item:
-                holdings_dict[item["symbol"]] = holdings_dict.get(item["symbol"], 0) + float(item["qty"])
-            elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                sym = str(item[0])
-                holdings_dict[sym] = holdings_dict.get(sym, 0) + float(item[1])
-            elif isinstance(item, str):
-                holdings_dict[item] = holdings_dict.get(item, 0) + 1
-    # Add purchased quantity
+                holdings_dict[item["symbol"]] = holdings_dict.get(item["symbol"], 0) + item["qty"]
+    else:
+        holdings_dict = {}
     holdings_dict[ticker] = holdings_dict.get(ticker, 0) + qty
     portfolio["holdings"] = holdings_dict
-
-    _console.print(
-        f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}",
-        style="green bold"
-    )
-
-
+    _console.print(f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}", style="green bold")

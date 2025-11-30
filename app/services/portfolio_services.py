@@ -6,6 +6,180 @@ import db
 _console = Console()
 
 
+def view_all_portfolios() -> None:
+    if not db.current_user:
+        _console.print("Please log in to view portfolios.", style="red")
+        return
+    
+    # Filter portfolios for current user (admin can see all)
+    if db.current_user.username == "admin":
+        user_portfolios = db.portfolios
+    else:
+        user_portfolios = [p for p in db.portfolios if p.get("owner") == db.current_user.username]
+    
+    if not user_portfolios:
+        _console.print("You have no portfolios yet.", style="yellow")
+        return
+    
+    # Build a price lookup for securities
+    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
+    
+    # Create a summary table
+    table = Table(title=f"Portfolios for {db.current_user.firstname}")
+    table.add_column("ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Name", justify="center", style="yellow", no_wrap=True)
+    table.add_column("Description", justify="center", style="white", no_wrap=True)
+
+    for portfolio in user_portfolios:
+        portfolio_id = portfolio.get("portfolio_id", "N/A")
+        name = portfolio.get("name", "Unnamed")
+        description = portfolio.get("description", "")
+        table.add_row(
+            str(portfolio_id),
+            name,
+            description
+        )
+    
+    _console.print(table)
+    _console.print(f"Available Balance: ${db.current_user.balance:,.2f}", style="green bold")
+    # Prompt to view holdings for a selected portfolio
+    if user_portfolios:
+        choice = _console.input("Enter a Portfolio ID to view holdings, or press Enter to skip: ").strip()
+        if choice:
+            try:
+                pid = int(choice)
+                # Only allow viewing if portfolio belongs to user (or admin)
+                valid_ids = [p.get("portfolio_id") for p in user_portfolios]
+                if pid in valid_ids:
+                    view_holdings(pid)
+                else:
+                    _console.print("Invalid Portfolio ID.", style="red")
+            except Exception:
+                _console.print("Invalid input.", style="red")
+
+def view_holdings(portfolio_id: int) -> None:
+    portfolio = next((p for p in db.portfolios if p["portfolio_id"] == portfolio_id), None)
+    if not portfolio:
+        _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
+        return
+    # Enforce ownership (admin can view all)
+    if not db.current_user:
+        _console.print("Please log in to view portfolios.", style="red")
+        return
+    owner = portfolio.get("owner")
+    if db.current_user.username != "admin" and owner != db.current_user.username:
+        _console.print("Access denied: you cannot view another user's portfolio.", style="red")
+        return
+    holdings = portfolio.get("holdings", [])
+    balance = db.current_user.balance if db.current_user else 0.0
+
+    # Build a price lookup for securities
+    securities = getattr(db, "Securities", [])
+    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in securities}
+
+    # Normalize holdings into a list of (symbol, qty) tuples
+    normalized: list[tuple[str, int]] = []
+
+    def add_pair(sym: str, qty_val) -> None:
+        try:
+            qty = int(qty_val)
+        except Exception:
+            qty = 1
+        if sym:
+            normalized.append((sym.strip(), qty))
+
+    if isinstance(holdings, dict):
+        # {"AAPL": 10, "MSFT": 5}
+        for sym, qty in holdings.items():
+            add_pair(sym, qty)
+    elif isinstance(holdings, (list, set, tuple)):
+        for item in holdings:
+            if isinstance(item, dict):
+                # {"symbol": "AAPL", "qty": 10}
+                add_pair(item.get("symbol"), item.get("qty", 1))
+            elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                add_pair(str(item[0]), item[1])
+            elif isinstance(item, str):
+                # Could be "AAPL" or "AAPL,MSFT" (comma-separated)
+                parts = [p.strip() for p in item.split(",") if p.strip()]
+                if len(parts) > 1:
+                    for sym in parts:
+                        add_pair(sym, 1)
+                else:
+                    add_pair(item, 1)
+            else:
+                # Fallback: string conversion
+                add_pair(str(item), 1)
+    elif isinstance(holdings, str):
+        # Single string possibly comma-separated
+        for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
+            add_pair(sym, 1)
+    
+    # Render table
+    table = Table(title=f"Holdings for Portfolio: {portfolio['name']}")
+    table.add_column("Security", style="yellow", justify="center", no_wrap=True)
+    table.add_column("Qty", style="cyan", justify="center", no_wrap=True)
+    table.add_column("Balance", style="green", justify="center", no_wrap=True)
+
+    total_value = 0.0
+    for sym, qty in normalized:
+        price = price_by_symbol.get(sym, 0.0)
+        balance = price * qty
+        total_value += balance
+        table.add_row(sym, str(qty), f"${balance:,.2f}")
+
+    # Add footer rows with subtotal, cash, and total
+    if normalized:
+        table.add_row("", "TOTAL", f"${total_value:,.2f}")
+
+    _console.print(table)
+
+def create_portfolio() -> None:
+    if not db.current_user:
+        _console.print("Please log in to create a portfolio.", style="red")
+        return
+    _console.print("\n   Create Portfolio   ", style="yellow")
+    name = _console.input("Portfolio Name: ")
+    description = _console.input("Description: ")
+    new_id = db.next_portfolio_id()
+    db.portfolios.append({
+        "portfolio_id": new_id,
+        "name": name,
+        "description": description,
+        "owner": db.current_user.username,
+        "holdings": []
+    })
+    _console.print(f"Portfolio '{name}' created with ID {new_id}.", style="green")
+
+def delete_portfolio(portfolio_id: int) -> None:
+    if not db.current_user:
+        _console.print("Please log in to delete a portfolio.", style="red")
+        return
+    idx = next((i for i, p in enumerate(db.portfolios) if p["portfolio_id"] == portfolio_id), None)
+    if idx is None:
+        _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
+        return
+    portfolio = db.portfolios[idx]
+    owner = portfolio.get("owner")
+    if db.current_user.username != "admin" and owner != db.current_user.username:
+        _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
+        return
+    # Prevent deletion if holdings are not empty
+    holdings = portfolio.get("holdings", [])
+    has_investments = False
+    if isinstance(holdings, dict):
+        has_investments = len(holdings) > 0
+    elif isinstance(holdings, (list, set, tuple)):
+        has_investments = len(holdings) > 0
+    elif isinstance(holdings, str):
+        has_investments = bool(holdings.strip())
+    if has_investments:
+        _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
+        return
+    name = portfolio["name"]
+    del db.portfolios[idx]
+    _console.print(f"Portfolio '{name}' deleted.", style="green")
+
 def partial_liquidate_holdings() -> None:
     if not db.current_user:
         _console.print("Please log in to liquidate holdings.", style="red")
@@ -25,6 +199,7 @@ def partial_liquidate_holdings() -> None:
         _console.print("Access denied: you cannot modify another user's portfolio.", style="red")
         return
     holdings = portfolio.get("holdings", {})
+
     # Normalize holdings to dict for easier handling
     if isinstance(holdings, dict):
         holdings_dict = holdings
@@ -63,11 +238,11 @@ def partial_liquidate_holdings() -> None:
             holdings_dict.pop(ticker)
             _console.print(f"Liquidated {orig_qty} of {ticker} at current market price ${current_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
         
-        # Update portfolio with cleared holdings and add proceeds to cash
+        # Update portfolio with cleared holdings and add proceeds to user balance
         portfolio["holdings"] = holdings_dict
-        portfolio["cash"] = portfolio.get("cash", 0.0) + total_proceeds
+        db.current_user.balance += total_proceeds
         _console.print(f"\nTotal proceeds: ${total_proceeds:,.2f}", style="green bold")
-        _console.print(f"New cash balance: ${portfolio['cash']:,.2f}", style="green bold")
+        _console.print(f"New balance: ${db.current_user.balance:,.2f}", style="green bold")
         return
     elif full_liq == "N":
         # Partial liquidation - ask for ONE specific security
@@ -123,268 +298,12 @@ def partial_liquidate_holdings() -> None:
         if holdings_dict[ticker] == 0:
             holdings_dict.pop(ticker)
         
-        # Update portfolio holdings and add proceeds to cash
+        # Update portfolio holdings and add proceeds to user balance
         portfolio["holdings"] = holdings_dict
-        portfolio["cash"] = portfolio.get("cash", 0.0) + proceeds
+        db.current_user.balance += proceeds
         _console.print(f"Liquidated {qty} of {ticker} at ${sale_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
-        _console.print(f"New cash balance: ${portfolio['cash']:,.2f}", style="green bold")
+        _console.print(f"New balance: ${db.current_user.balance:,.2f}", style="green bold")
         return
     else:
         _console.print("Invalid choice. Please enter Y or N.", style="red")
         return
-
-
-def view_holdings(portfolio_id: int) -> None:
-    portfolio = next((p for p in db.portfolios if p["portfolio_id"] == portfolio_id), None)
-    if not portfolio:
-        _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
-        return
-    
-    # Enforce ownership (admin can view all)
-    if not db.current_user:
-        _console.print("Please log in to view portfolios.", style="red")
-        return
-    owner = portfolio.get("owner")
-    if db.current_user.username != "admin" and owner != db.current_user.username:
-        _console.print("Access denied: you cannot view another user's portfolio.", style="red")
-        return
-    
-    holdings = portfolio.get("holdings", [])
-
-    # Build a price lookup for securities
-    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
-
-    # Normalize holdings into a list of (symbol, qty) tuples
-    normalized: list[tuple[str, int]] = []
-
-    def add_pair(sym: str, qty_val) -> None:
-        try:
-            qty = int(qty_val)
-        except Exception:
-            qty = 1
-        if sym:
-            normalized.append((sym.strip(), qty))
-
-    if isinstance(holdings, dict):
-        # {"AAPL": 10, "MSFT": 5}
-        for sym, qty in holdings.items():
-            add_pair(sym, qty)
-    elif isinstance(holdings, (list, set, tuple)):
-        for item in holdings:
-            if isinstance(item, dict):
-                # {"symbol": "AAPL", "qty": 10}
-                add_pair(item.get("symbol"), item.get("qty", 1))
-            elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                add_pair(str(item[0]), item[1])
-            elif isinstance(item, str):
-                # Could be "AAPL" or "AAPL,MSFT" (comma-separated)
-                parts = [p.strip() for p in item.split(",") if p.strip()]
-                if len(parts) > 1:
-                    for sym in parts:
-                        add_pair(sym, 1)
-                else:
-                    add_pair(item, 1)
-            else:
-                # Fallback: string conversion
-                add_pair(str(item), 1)
-    elif isinstance(holdings, str):
-        # Single string possibly comma-separated
-        for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
-            add_pair(sym, 1)
-
-    # Show cash balance
-    cash_balance = portfolio.get("cash", 0.0)
-    _console.print(f"\nCash Balance: ${cash_balance:,.2f}", style="green bold")
-    
-    # Render table
-    table = Table(title=f"Holdings for Portfolio {portfolio['name']}")
-    table.add_column("Security", style="yellow", justify="center", no_wrap=True)
-    table.add_column("Qty", style="cyan", justify="center", no_wrap=True)
-    table.add_column("Balance", style="green", justify="center", no_wrap=True)
-
-    total_value = 0.0
-    for sym, qty in normalized:
-        price = price_by_symbol.get(sym, 0.0)
-        balance = price * qty
-        total_value += balance
-        table.add_row(sym, str(qty), f"${balance:,.2f}")
-
-    # Add footer rows with subtotal, cash, and total
-    if normalized:
-        table.add_row("", "SUBTOTAL", f"${total_value:,.2f}")
-    table.add_row("", "CASH", f"${cash_balance:,.2f}")
-    total_with_cash = total_value + cash_balance
-    table.add_row("", "TOTAL", f"${total_with_cash:,.2f}")
-
-    _console.print(table)
-
-
-def view_all_portfolios() -> None:
-    if not db.current_user:
-        _console.print("Please log in to view portfolios.", style="red")
-        return
-    
-    # Filter portfolios for current user (admin can see all)
-    if db.current_user.username == "admin":
-        user_portfolios = db.portfolios
-    else:
-        user_portfolios = [p for p in db.portfolios if p.get("owner") == db.current_user.username]
-    
-    if not user_portfolios:
-        _console.print("You have no portfolios yet.", style="yellow")
-        return
-    
-    # Build a price lookup for securities
-    price_by_symbol = {s.get("symbol"): float(s.get("price", 0)) for s in getattr(db, "Securities", [])}
-    
-    # Create a summary table
-    table = Table(title=f"Portfolios for {db.current_user.firstname}")
-    table.add_column("ID", justify="center", style="cyan", no_wrap=True)
-    table.add_column("Name", justify="center", style="yellow", no_wrap=True)
-    table.add_column("Description", justify="center", style="white", no_wrap=True)
-    table.add_column("Holdings Count", justify="center", style="magenta", no_wrap=True)
-    table.add_column("Cash", justify="center", style="green", no_wrap=True)
-    table.add_column("Total Value", justify="center", style="green", no_wrap=True)
-    
-    for portfolio in user_portfolios:
-        portfolio_id = portfolio.get("portfolio_id", "N/A")
-        name = portfolio.get("name", "Unnamed")
-        description = portfolio.get("description", "")
-        holdings = portfolio.get("holdings", [])
-        
-        # Count holdings and calculate total value
-        normalized: list[tuple[str, int]] = []
-        
-        def add_pair(sym: str, qty_val) -> None:
-            try:
-                qty = int(qty_val)
-            except Exception:
-                qty = 1
-            if sym:
-                normalized.append((sym.strip(), qty))
-        
-        if isinstance(holdings, dict):
-            for sym, qty in holdings.items():
-                add_pair(sym, qty)
-        elif isinstance(holdings, (list, set, tuple)):
-            for item in holdings:
-                if isinstance(item, dict):
-                    add_pair(item.get("symbol"), item.get("qty", 1))
-                elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                    add_pair(str(item[0]), item[1])
-                elif isinstance(item, str):
-                    parts = [p.strip() for p in item.split(",") if p.strip()]
-                    if len(parts) > 1:
-                        for sym in parts:
-                            add_pair(sym, 1)
-                    else:
-                        add_pair(item, 1)
-                else:
-                    add_pair(str(item), 1)
-        elif isinstance(holdings, str):
-            for sym in [p.strip() for p in holdings.split(",") if p.strip()]:
-                add_pair(sym, 1)
-        
-        holdings_count = len(normalized)
-        holdings_value = sum(price_by_symbol.get(sym, 0.0) * qty for sym, qty in normalized)
-        cash_balance = portfolio.get("cash", 0.0)
-        total_value = holdings_value + cash_balance
-        
-        table.add_row(
-            str(portfolio_id),
-            name,
-            description,
-            str(holdings_count),
-            f"${cash_balance:,.2f}",
-            f"${total_value:,.2f}"
-        )
-    
-    _console.print(table)
-    # Prompt to view holdings for a selected portfolio
-    if user_portfolios:
-        choice = _console.input("Enter a Portfolio ID to view holdings, or press Enter to skip: ").strip()
-        if choice:
-            try:
-                pid = int(choice)
-                # Only allow viewing if portfolio belongs to user (or admin)
-                valid_ids = [p.get("portfolio_id") for p in user_portfolios]
-                if pid in valid_ids:
-                    view_holdings(pid)
-                else:
-                    _console.print("Invalid Portfolio ID.", style="red")
-            except Exception:
-                _console.print("Invalid input.", style="red")
-
-
-def create_portfolio() -> None:
-    if not db.current_user:
-        _console.print("Please log in to create a portfolio.", style="red")
-        return
-    _console.print("\n   Create Portfolio   ", style="yellow")
-    name = _console.input("Portfolio Name: ")
-    description = _console.input("Description: ")
-    new_id = db.next_portfolio_id()
-    db.portfolios.append({
-        "portfolio_id": new_id,
-        "name": name,
-        "description": description,
-        "owner": db.current_user.username,
-        "holdings": []
-    })
-    _console.print(f"Portfolio '{name}' created with ID {new_id}.", style="green")
-
-
-def delete_portfolio(portfolio_id: int) -> None:
-    if not db.current_user:
-        _console.print("Please log in to delete a portfolio.", style="red")
-        return
-    idx = next((i for i, p in enumerate(db.portfolios) if p["portfolio_id"] == portfolio_id), None)
-    if idx is None:
-        _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
-        return
-    portfolio = db.portfolios[idx]
-    owner = portfolio.get("owner")
-    if db.current_user.username != "admin" and owner != db.current_user.username:
-        _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
-        return
-    # Prevent deletion if holdings are not empty
-    holdings = portfolio.get("holdings", [])
-    has_investments = False
-    if isinstance(holdings, dict):
-        has_investments = len(holdings) > 0
-    elif isinstance(holdings, (list, set, tuple)):
-        has_investments = len(holdings) > 0
-    elif isinstance(holdings, str):
-        has_investments = bool(holdings.strip())
-    if has_investments:
-        _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
-        return
-    name = portfolio["name"]
-    del db.portfolios[idx]
-    _console.print(f"Portfolio '{name}' deleted.", style="green")
-
-
-def liquidate_holdings(portfolio_id: int) -> None:
-    if not db.current_user:
-        _console.print("Please log in to liquidate holdings.", style="red")
-        return
-    portfolio = next((p for p in db.portfolios if p["portfolio_id"] == portfolio_id), None)
-    if not portfolio:
-        _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
-        return
-    owner = portfolio.get("owner")
-    if db.current_user.username != "admin" and owner != db.current_user.username:
-        _console.print("Access denied: you cannot modify another user's portfolio.", style="red")
-        return
-    portfolio["holdings"] = []
-    _console.print(f"All holdings liquidated for portfolio '{portfolio['name']}'.", style="green")
-
-
-__all__ = [
-    "view_holdings",
-    "view_all_portfolios",
-    "create_portfolio",
-    "delete_portfolio",
-    "partial_liquidate_holdings",
-    "liquidate_holdings",
-]
