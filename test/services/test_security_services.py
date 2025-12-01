@@ -1,87 +1,27 @@
-import rich
-from rich.console import Console
-from rich.table import Table
-import app.db as db
+def test_place_order_no_user():
+    """Test order placement when no user is logged in"""
+    pass
 
-_console = Console()
+def test_place_order_invalid_portfolio():
+    """Test order placement with invalid portfolio"""
+    pass
 
+def test_place_order_invalid_ticker():
+    """Test order placement with invalid ticker symbol"""
+    pass
 
-def view_all_securities() -> None:
-    table = Table(title="All Securities")
-    table.add_column("Ticker", style="cyan", justify="center")
-    table.add_column("Issuer", style="yellow", justify="center")
-    table.add_column("Name", style="white", justify="center")
-    table.add_column("Price", style="green", justify="center")
-    for sec in db.Securities:
-        table.add_row(
-            sec.get("symbol", "N/A"),
-            sec.get("issuer", "N/A"),
-            sec.get("name", "N/A"),
-            f"${sec.get('price', 0):,.2f}"
-        )
-    _console.print(table)
+def test_place_order_invalid_quantity():
+    """Test order placement with invalid quantity"""
+    pass
 
+def test_place_order_insufficient_funds():
+    """Test order placement with insufficient portfolio funds"""
+    pass
 
-def place_order() -> None:
-    if not db.current_user:
-        _console.print("Please log in to place an order.", style="red")
-        return
-    # Select portfolio
-    user_portfolios = [p for p in db.portfolios if p.get("owner") == db.current_user.username]
-    if not user_portfolios:
-        _console.print("You have no portfolios. Create one first.", style="yellow")
-        return
-    _console.print("Your Portfolios:", style="yellow")
-    for p in user_portfolios:
-        _console.print(f"ID: {p['portfolio_id']} | Name: {p['name']}")
-    while True:
-        pid_str = _console.input("Enter Portfolio ID to invest in: ").strip()
-        try:
-            pid = int(pid_str)
-            portfolio = next((p for p in user_portfolios if p["portfolio_id"] == pid), None)
-            if not portfolio:
-                _console.print("Invalid Portfolio ID.", style="red")
-                continue
-            break
-        except Exception:
-            _console.print("Invalid input.", style="red")
-    # Select security
-    ticker = _console.input("Enter ticker to buy: ").strip().upper()
-    security = next((s for s in db.Securities if s["symbol"] == ticker), None)
-    if not security:
-        _console.print(f"Security '{ticker}' not found.", style="red")
-        return
-    # Enter quantity
-    while True:
-        qty_str = _console.input("Enter quantity to buy: ").strip()
-        try:
-            qty = float(qty_str)
-            if qty <= 0:
-                _console.print("Quantity must be greater than 0.", style="red")
-                continue
-            break
-        except Exception:
-            _console.print("Invalid quantity.", style="red")
-    # Calculate cost
-    cost = qty * security["price"]
-    _console.print(f"Order: {qty} x {ticker} @ ${security['price']:,.2f} = ${cost:,.2f}", style="green")
-    # Check user balance
-    if cost > db.current_user.balance:
-        _console.print(f"Insufficient funds. Available balance is ${db.current_user.balance:,.2f}, but purchase cost is ${cost:,.2f}.", style="red")
-        return
-    # Deduct cost from user balance and add investment to holdings
-    db.current_user.balance -= cost
-    holdings = portfolio.get("holdings", {})
-    holdings_dict = {}
-    if isinstance(holdings, dict):
-        holdings_dict = holdings
-    elif isinstance(holdings, list):
-        # If holdings is a list, convert to dict
-        for item in holdings:
-            if isinstance(item, dict) and "symbol" in item and "qty" in item:
-                holdings_dict[item["symbol"]] = holdings_dict.get(item["symbol"], 0) + item["qty"]
-    else:
-        holdings_dict = {}
-    holdings_dict[ticker] = holdings_dict.get(ticker, 0) + qty
-    portfolio["holdings"] = holdings_dict
-    _console.print(f"Added {qty} of {ticker} to portfolio '{portfolio['name']}'. Remaining balance: ${db.current_user.balance:,.2f}", style="green bold")
+def test_place_order_success():
+    """Test successful order placement"""
+    pass
+
+def test_place_order_duplicate_holding():
+    """Test order placement for security already in portfolio"""
+    pass
