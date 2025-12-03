@@ -1,6 +1,11 @@
+import pytest
+from app.services.portfolio_services import partial_liquidate_holdings, create_portfolio, delete_portfolio, view_holdings
+
 def test_partial_liquidation_no_user():
     """Test partial liquidation when no user is logged in"""
-    pass
+    result = partial_liquidate_holdings()
+    yield 
+    assert result is None
 
 def test_partial_liquidation_invalid_portfolio_id():
     """Test partial liquidation with invalid portfolio ID input"""
