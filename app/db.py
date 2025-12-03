@@ -1,5 +1,7 @@
 # define starting user dictionary
 from domain.Investment import Investment 
+from domain.Transactions import Transactions
+from domain.Security import Security
 from domain.User import User
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -73,35 +75,24 @@ portfolios = [
     }
 ]
 #create Security list
-Securities = [
-    {
-        "symbol": "AAPL",
-        "name": "Apple Inc.",
-        "price": 250.00,
-        "issuer": "CME"
-    },
-    {
-        "symbol": "MSFT",
-        "name": "Microsoft Corporation",
-        "price": 500.00,
-        "issuer": "CME"
-    },
-    {
-        "symbol": "AMZN",
-        "name": "Amazon",
-        "price": 280.00,
-        "issuer": "CME"
-    },  
-    {
-        "symbol": "NVDA",
-        "name": "Microsoft Corporation",
-        "price": 200.00,
-        "issuer": "CME"
-    },
-    {
-        "symbol": "BTC",
-        "name": "Bitcoin",
-        "price": 105000,
-        "issuer": "CME"
-    }
+securities = [
+    Security(symbol = "AAPL",name = "Apple Inc", price = 250.00, issuer = "CME"),
+    Security(symbol = "MSFT",name = "Microsoft Corporation",price = 500.00,issuer = "CME"),
+    Security(symbol = "AMZN",name = "Amazon", price = 280.00, issuer = "CME"),
+    Security(symbol = "NVDA",name = "Microsoft Corporation", price = 200.00, issuer = "CME"),
+    Security(symbol = "BTC",name = "Bitcoin", price = 105000.00, issuer = "CME"),
+] 
+
+#create transaction list
+transactions = [
+        Transactions(
+        transaction_id= 1,
+        user_id= "admin",
+        portfolio_id= 1,
+        security_id= "AAPL",
+        qty= 10,
+        price= 250.00,
+        transaction_type= "BUY",
+        timestamp= "2024-01-01 10:00:00"
+    )
 ]

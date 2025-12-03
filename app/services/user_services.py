@@ -2,7 +2,6 @@ from typing import List
 from rich.console import Console
 from rich.table import Table
 import db
-
 from domain.User import User
 
 _console = Console()

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 def test_place_order_no_user():
     """Test order placement when no user is logged in"""
     pass
@@ -25,3 +26,5 @@ def test_place_order_success():
 def test_place_order_duplicate_holding():
     """Test order placement for security already in portfolio"""
     pass
+=======
+>>>>>>> sqldatabase

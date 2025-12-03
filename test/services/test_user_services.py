@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 def test_create_user_duplicate_username():
     """Test user creation with existing username"""
     pass
@@ -21,3 +22,5 @@ def test_delete_user_with_portfolios():
 def test_delete_user_success():
     """Test successful user deletion"""
     pass
+=======
+>>>>>>> sqldatabase
