@@ -1,4 +1,4 @@
-def database_config(db_name: str, user: str, password:str, host:str, port:str):
+def database_config():
     user = "tkitchenjr"
     password = "Cheeseit22"
     host = "localhost"

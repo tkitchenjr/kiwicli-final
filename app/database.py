@@ -6,17 +6,18 @@ class Base(DeclarativeBase): pass
 def create_connection_string() -> str:
     return database_config()
 
-engine = create_engine(database_config), echo=True
-LocalSession = sessionmaker(
-    bind=engine,
-    autoflush=False,
-    autocommit=False,
-    expire_on_commit=False  
+def engine():
+    engine = create_engine(database_config), echo=True
+        LocalSession = sessionmaker(
+            bind=engine,
+            autoflush=False,
+            autocommit=False,
+            expire_on_commit=False  
 )
 
 
 def get_session():
-    db = LocalSession()
+    db = LocalSession(session)
     try:
         yield db
     finally:
