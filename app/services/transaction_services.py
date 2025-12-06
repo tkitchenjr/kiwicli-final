@@ -1,6 +1,6 @@
 from rich.console import Console
 from rich.table import Table
-import db
+from database import get_session
 from domain.Transactions import Transactions
 from datetime import datetime
 

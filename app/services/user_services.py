@@ -1,8 +1,9 @@
+import db
 from typing import List
 from rich.console import Console
 from rich.table import Table
-import db
 from domain.User import User
+from database import LocalSession
 
 _console = Console()
 
