@@ -1,11 +1,10 @@
+from __future__ import annotations
 from rich.console import Console
 from typing import Tuple
 from cli import constants
 
-from cli.menu_printer import _router, _menu
-
 from domain.User import User
-
+    
 from database import SessionLocal
 
 _console = Console()
@@ -13,6 +12,7 @@ _console = Console()
 current_user = None
 
 def handle_user_input(menu_id: int, user_input: str):
+    from cli.menu_printer import _router
     try:
         # Convert user_input to int for menu navigation
         input_num = int(user_input)
@@ -76,6 +76,7 @@ def print_error(error: str):
     _console.print(error, style='red')
 
 def print_menu(menu_type: int) -> None:
+    from cli.menu_printer import _menu
     _console.print(_menu[menu_type])
     user_input = _console.input("Select a menu: ")
     handle_user_input(menu_type, user_input)

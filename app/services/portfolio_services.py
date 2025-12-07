@@ -1,5 +1,7 @@
+from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
+
 
 from domain.Investment import Investment
 from domain.Portfolio import Portfolio
@@ -7,7 +9,6 @@ from domain.User import User
 from domain.Security import Security
 
 from services.transaction_services import update_transaction_record
-from services.login_services import current_user
 
 from database import SessionLocal
 
@@ -18,6 +19,7 @@ _console = Console()
 
 
 def view_all_portfolios() -> None:
+    from services.login_services import current_user
     with SessionLocal() as session:
         if not session.query(User).filter_by(username=current_user).first():
             _console.print("Please log in to view portfolios.", style="red")

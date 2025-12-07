@@ -2,7 +2,7 @@ from cli import constants
 from typing import Dict
 from domain.MenuFunctions import MenuFunctions
 from services.user_services import render_users, add_user, delete_user
-from services.portfolio_services import view_all_portfolios, delete_portfolio, create_portfolio, partial_liquidate_holdings
+from services.portfolio_services import view_all_portfolios, delete_portfolio, create_portfolio, liquidate_portfolio
 from services.security_services import view_all_securities, place_order
 from services.transaction_services import view_transactions, query_transactions_by_user, query_transactions_by_portfolio, query_transactions_by_security
 from services.login_services import login, admin_guard
@@ -36,7 +36,7 @@ _router: Dict[str, MenuFunctions] ={
     "3.1": MenuFunctions(executor=view_all_portfolios, navigator=lambda: constants.portfolio_menu),
     "3.2": MenuFunctions(executor=create_portfolio, navigator=lambda: constants.portfolio_menu),
     "3.3": MenuFunctions(executor=delete_portfolio, navigator=lambda: constants.portfolio_menu),
-    "3.4": MenuFunctions(executor=partial_liquidate_holdings, navigator=lambda: constants.portfolio_menu),
+    "3.4": MenuFunctions(executor=liquidate_portfolio, navigator=lambda: constants.portfolio_menu),
     # Marketplace menu (menu_id = 4)
     "4.1": MenuFunctions(executor=view_all_securities, navigator=lambda: constants.marketplace_menu),
     "4.2": MenuFunctions(executor=place_order, navigator=lambda: constants.marketplace_menu),

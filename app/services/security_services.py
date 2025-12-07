@@ -1,3 +1,4 @@
+from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
 from datetime import datetime
@@ -10,7 +11,6 @@ from domain.User import User
 
 from services.transaction_services import update_transaction_record
 from services.transaction_services import format_timestamp
-from services.login_services import current_user
 
 from database import SessionLocal 
 
@@ -36,6 +36,7 @@ def view_all_securities() -> None:
 
 def place_order() -> None:
     # check for any portfolios owned by user
+    from services.login_services import current_user
     with SessionLocal() as session:
         user_portfolios = session.query(Portfolio).filter_by(owner=current_user).all()
         if not user_portfolios:
