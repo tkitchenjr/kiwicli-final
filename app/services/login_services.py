@@ -1,12 +1,17 @@
-import db
 from rich.console import Console
 from typing import Tuple
-from cli.menu_printer import _router, _menu
 from cli import constants
+
+from cli.menu_printer import _router, _menu
+
+from domain.User import User
+
+from database import SessionLocal
 
 _console = Console()
 
-# handle user input function to navigate between menus 
+current_user = None
+
 def handle_user_input(menu_id: int, user_input: str):
     try:
         # Convert user_input to int for menu navigation
@@ -39,38 +44,37 @@ def handle_user_input(menu_id: int, user_input: str):
         print_error(f"Error: {str(e)}")
         print_menu(menu_id)
 
-# define function to handle user login
 def get_login_inputs() -> Tuple[str,str]:
     username = _console.input("Enter username: ")
     password = _console.input("Enter password: ")
     return username, password
 
-# login function
 def login():
+    global current_user
     username, password = get_login_inputs()
+    
     try:
-        #query db for user and handle exception
-        user = db.query_user(username)
-        if not user or user.password != password:
-            raise Exception("Invalid username or password")
-        db.current_user = user
-        _console.print(f"\nWelcome, {user.firstname}!", style="green")
+        with SessionLocal() as session:
+            user = session.query(User).filter_by(username=username).first()
+            if not user or user.password != password:
+                current_user = None
+                raise Exception("Invalid username or password")
+            
+            current_user = username  # Store username string as global
+            _console.print(f"\nWelcome, {user.firstname}!", style="green")
     except Exception as e:
         raise Exception(f"Login failed: {str(e)}")
-    
 
 def admin_guard():
-    if db.current_user and db.current_user.username == "admin":
+    if  current_user == "admin":
         return constants.user_menu
     else:
         print_error("Access denied: Only admin can manage users.")
         return constants.main_menu
     
-    # define function to print error messages
 def print_error(error: str):
     _console.print(error, style='red')
 
-# define function to print menus
 def print_menu(menu_type: int) -> None:
     _console.print(_menu[menu_type])
     user_input = _console.input("Select a menu: ")
