@@ -1,5 +1,5 @@
 def database_config():
-    user = "tkitchenjr"
+    user = "root"
     password = "Cheeseit22"
     host = "localhost"
     port = "3306"

@@ -13,7 +13,7 @@ class Transactions(Base):
     #     self.price = price
     #     self.timestamp = timestamp
     __tablename__ = "Transactions"
-    transaction_id: Mapped[str] = mapped_column(String(50), primary_key=True, nullable=False)
+    transaction_id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     user_id: Mapped[str] = mapped_column(String(50), nullable=False)
     portfolio_id: Mapped[str] = mapped_column(String(50), nullable=False)
     security_id: Mapped[str] = mapped_column(String(50), nullable=False)
