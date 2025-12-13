@@ -109,10 +109,11 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
     
 def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
     with get_session() as session:
-        _console.print("\n   Create New Portfolio   ", style="yellow")
-        if name is None 
-        or description is None:
-            _console.print("Portfolio name and description are required.", style="yellow")
+        if name is None:
+            _console.print("Portfolio name is required.", style="yellow")
+            return False
+        if description is None:
+            _console.print("Portfolio description is required.", style="yellow")
             return False
 
         new_portfolio = Portfolio(

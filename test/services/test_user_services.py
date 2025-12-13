@@ -51,6 +51,17 @@ def test_add_user_zero_balance(db_session, monkeypatch):
     assert db_session.query(User).count() == 1
     assert db_session.query(User).first().balance == 0
 
+def test_add_user_invalid_balance_input(db_session, monkeypatch):
+    monkeypatch.setattr('app.services.user_services.get_session', lambda: db_session)
+    # balance None triggers prompt; feed invalid input
+    inputs = iter(["invalid"])
+    monkeypatch.setattr('app.services.user_services._console.input', lambda prompt='': next(inputs))
+
+    result = add_user(username='testuser', password='password', firstname='First', lastname='Last', balance=None)
+
+    assert result is False
+    assert db_session.query(User).count() == 0
+
 def test_delete_user_success(db_session, monkeypatch):
     monkeypatch.setattr('app.services.user_services.get_session', lambda: db_session)
 
@@ -112,6 +123,25 @@ def test_delete_user_with_portfolio(db_session, monkeypatch):
     assert result == False
     assert db_session.query(User).count() == 1
 
+def test_delete_user_with_portfolio_confirm_delete(db_session, monkeypatch):
+    monkeypatch.setattr('app.services.user_services.get_session', lambda: db_session)
+
+    user = User(username ='user1', password='password', firstname='first', lastname='last', balance = 1000)
+    db_session.add(user)
+    db_session.commit()
+
+    portfolio = Portfolio(id='1', owner='user1', name='Test Portfolio')
+    db_session.add(portfolio)
+    db_session.commit()
+
+    inputs = iter(['y', 'y'])
+    monkeypatch.setattr('app.services.user_services._console.input', lambda prompt='': next(inputs))
+    
+    result = delete_user(username='user1')
+    assert result == True
+    assert db_session.query(User).count() == 0
+    assert db_session.query(Portfolio).count() == 0
+
 def test_view_users(db_session,monkeypatch):
     monkeypatch.setattr('app.services.user_services.get_session', lambda: db_session)
 
@@ -150,6 +180,4 @@ def test_list_users_no_users(db_session, monkeypatch):
     users = list_users()
     assert len(users) == 0
     assert result == []
-
-
 

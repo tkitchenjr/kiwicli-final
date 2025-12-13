@@ -1,11 +1,11 @@
 from __future__ import annotations
 from rich.console import Console
 from typing import Tuple
-from cli import constants
+from app.cli import constants
 
-from domain.User import User
+from app.domain.User import User
     
-from database import get_session
+from app.database import get_session
 
 _console = Console()
 

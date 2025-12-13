@@ -3,16 +3,16 @@ from rich.console import Console
 from rich.table import Table
 from datetime import datetime
 
-from domain.Transactions import Transactions
-from domain.Portfolio import Portfolio
-from domain.Investment import Investment
-from domain.Security import Security
-from domain.User import User
+from app.domain.Transactions import Transactions
+from app.domain.Portfolio import Portfolio
+from app.domain.Investment import Investment
+from app.domain.Security import Security
+from app.domain.User import User
 
-from services.transaction_services import update_transaction_record
-from services.transaction_services import format_timestamp
+from app.services.transaction_services import update_transaction_record
+from app.services.transaction_services import format_timestamp
 
-from database import get_session 
+from app.database import get_session 
 
 _console = Console()
 
@@ -35,9 +35,10 @@ def view_all_securities() -> None:
     _console.print(table)
 
 def place_order(portfolio_id: int = None, ticker: str = None, quantity: float = None) -> bool:
-    from services.login_services import current_user
+    from app.services.login_services import current_user
     with get_session() as session:
-        user_portfolios = session.query(Portfolio).filter_by(owner=current_user).all()
+        user_identifier = getattr(current_user, "username", current_user)
+        user_portfolios = session.query(Portfolio).filter_by(owner=user_identifier).all()
         if not user_portfolios:
             _console.print("You have no portfolios. Create one first.", style="yellow")
             return False
@@ -81,12 +82,15 @@ def place_order(portfolio_id: int = None, ticker: str = None, quantity: float = 
                     break
                 except Exception:
                     _console.print("Invalid quantity.", style="red")
+        else:
+            if quantity <= 0:
+                return False
         
         cost = quantity * security.price
         if ticker is None or quantity is None:
             _console.print(f"Order: {quantity} x {ticker} @ ${security.price:,.2f} = ${cost:,.2f}", style="green")
 
-        user = session.query(User).filter_by(username=current_user.username).first()
+        user = session.query(User).filter_by(username=user_identifier).first()
         if cost > user.balance:
             if ticker is None or quantity is None:
                 _console.print(
@@ -111,7 +115,7 @@ def place_order(portfolio_id: int = None, ticker: str = None, quantity: float = 
 
         update_transaction_record(
             transaction_id=session.query(Transactions).count() + 1,
-            user_id=current_user.username,
+            user_id=user_identifier,
             portfolio_id=str(portfolio.id),
             security_id=ticker,
             transaction_type="BUY",
@@ -129,6 +133,4 @@ def place_order(portfolio_id: int = None, ticker: str = None, quantity: float = 
             )
         
         return True
-
-
 
