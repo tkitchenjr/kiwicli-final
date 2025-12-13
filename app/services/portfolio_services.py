@@ -9,8 +9,9 @@ from domain.User import User
 from domain.Security import Security
 
 from services.transaction_services import update_transaction_record
+from services.login_services import current_user
 
-from database import SessionLocal
+from database import get_session
 
 import datetime
 
@@ -19,8 +20,7 @@ _console = Console()
 
 
 def view_all_portfolios() -> None:
-    from services.login_services import current_user
-    with SessionLocal() as session:
+    with get_session() as session:
         if not session.query(User).filter_by(username=current_user).first():
             _console.print("Please log in to view portfolios.", style="red")
             return
@@ -66,7 +66,7 @@ def view_all_portfolios() -> None:
                     _console.print("Invalid input.", style="red")
     
 def view_holdings(portfolio_id: int, current_user: str) -> None:
-    with SessionLocal() as session:
+    with get_session() as session:
         portfolio_id = _console.input("Enter Portfolio ID to view holdings: ").strip()
         portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
         if not portfolio:
@@ -105,56 +105,63 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
         table.add_row(sym, str(qty), f"${balance:,.2f}")
     return
     
-def create_portfolio(current_user: str) -> None:
-    with SessionLocal() as session:
-        _console.print("\n   Create Portfolio   ", style="yellow")
-        portfolio_name = _console.input("Portfolio Name: ")
-        description = _console.input("Description: ")
+def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
+    with get_session() as session:
+        if name is None:
+            _console.print("\n   Create Portfolio   ", style="yellow")
+            name = _console.input("Portfolio Name: ")
+        if description is None:
+            description = _console.input("Description: ")
 
         new_portfolio = Portfolio(
             id = session.query(Portfolio).count() + 1,
-            name = portfolio_name,
+            name = name,
             description=description,
             owner=current_user
         )
         session.add(new_portfolio)
         session.commit()
         
-        _console.print(f"Portfolio '{new_portfolio.id}' created with ID {new_portfolio.id}.", style="green")
-    session.close()
+        if name is None or description is None:
+            _console.print(f"Portfolio '{new_portfolio.id}' created with ID {new_portfolio.id}.", style="green")
+        return True
     
-def delete_portfolio(current_user: str) -> None:
-    with SessionLocal() as session:
-        _console.print("\n   Delete Portfolio   ", style="yellow")
-        try:
-            pid_str = _console.input("Enter Portfolio ID to delete: ").strip()
-            portfolio_id = int(pid_str)
-        except Exception:
-            _console.print("Invalid Portfolio ID.", style="red")
-            return
+def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
+    with get_session() as session:
+        if portfolio_id is None:
+            _console.print("\n   Delete Portfolio   ", style="yellow")
+            try:
+                pid_str = _console.input("Enter Portfolio ID to delete: ").strip()
+                portfolio_id = int(pid_str)
+            except Exception:
+                _console.print("Invalid Portfolio ID.", style="red")
+                return False
         
         portfolio = session.query(Portfolio).filter_by(portfolio_id=portfolio.id).first()
         if not portfolio:
-            _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
-            return
+            if portfolio_id is None:
+                _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
+            return False
         
         if current_user != "admin" and portfolio.owner != current_user:
-            _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
-            return
+            if portfolio_id is None:
+                _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
+            return False
 
-        # Check if portfolio has investments
         investments = session.query(Investment).filter_by(portfolio_id=portfolio.id).all()
         if investments:
-            _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
-            return
+            if portfolio_id is None:
+                _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
+            return False
         
-        # Delete portfolio
         session.delete(portfolio)
         session.commit()
-        _console.print(f"Portfolio '{portfolio.name}' deleted successfully.", style="green")
+        if portfolio_id is None:
+            _console.print(f"Portfolio '{portfolio.name}' deleted successfully.", style="green")
+        return True
 
 def liquidate_portfolio(current_user: str) -> None:
-    with SessionLocal() as session:
+    with get_session() as session:
         _console.print("\n   Harvest Liquidation   ", style="yellow")
         try:
             pid_str = _console.input("Enter Portfolio ID: ").strip()

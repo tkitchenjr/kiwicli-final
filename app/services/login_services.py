@@ -5,7 +5,7 @@ from cli import constants
 
 from domain.User import User
     
-from database import SessionLocal
+from database import get_session
 
 _console = Console()
 
@@ -54,7 +54,7 @@ def login():
     username, password = get_login_inputs()
     
     try:
-        with SessionLocal() as session:
+        with get_session() as session:
             user = session.query(User).filter_by(username=username).first()
             if not user or user.password != password:
                 current_user = None
