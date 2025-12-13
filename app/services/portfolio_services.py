@@ -3,15 +3,15 @@ from rich.console import Console
 from rich.table import Table
 
 
-from domain.Investment import Investment
-from domain.Portfolio import Portfolio
-from domain.User import User
-from domain.Security import Security
+from app.domain.Investment import Investment
+from app.domain.Portfolio import Portfolio
+from app.domain.User import User
+from app.domain.Security import Security
 
-from services.transaction_services import update_transaction_record
-from services.login_services import current_user
+from app.services.transaction_services import update_transaction_record
+from app.services.login_services import current_user
 
-from database import get_session
+from app.database import get_session
 
 import datetime
 
@@ -67,7 +67,9 @@ def view_all_portfolios() -> None:
     
 def view_holdings(portfolio_id: int, current_user: str) -> None:
     with get_session() as session:
-        portfolio_id = _console.input("Enter Portfolio ID to view holdings: ").strip()
+        # Use provided portfolio_id when passed; otherwise prompt the user.
+        if portfolio_id is None:
+            portfolio_id = _console.input("Enter Portfolio ID to view holdings: ").strip()
         portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
         if not portfolio:
             _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
@@ -98,7 +100,7 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
         qty = investment.Qty
 
         # Get current price from security (assuming Security model exists)
-        security = session.query(Security).filter_by(ticker=sym).first()
+        security = session.query(Security).filter_by(symbol=sym).first()
         price = float(security.price) if security else 0.0
         balance = price * qty
         total_value += balance
@@ -107,23 +109,22 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
     
 def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
     with get_session() as session:
-        if name is None:
-            _console.print("\n   Create Portfolio   ", style="yellow")
-            name = _console.input("Portfolio Name: ")
-        if description is None:
-            description = _console.input("Description: ")
+        _console.print("\n   Create New Portfolio   ", style="yellow")
+        if name is None 
+        or description is None:
+            _console.print("Portfolio name and description are required.", style="yellow")
+            return False
 
         new_portfolio = Portfolio(
-            id = session.query(Portfolio).count() + 1,
-            name = name,
+            id=session.query(Portfolio).count() + 1,
+            name=name,
             description=description,
             owner=current_user
         )
         session.add(new_portfolio)
         session.commit()
-        
-        if name is None or description is None:
-            _console.print(f"Portfolio '{new_portfolio.id}' created with ID {new_portfolio.id}.", style="green")
+
+        _console.print(f"Portfolio '{new_portfolio.id}' created with ID {new_portfolio.id}.", style="green")
         return True
     
 def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
@@ -137,7 +138,7 @@ def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
                 _console.print("Invalid Portfolio ID.", style="red")
                 return False
         
-        portfolio = session.query(Portfolio).filter_by(portfolio_id=portfolio.id).first()
+        portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
         if not portfolio:
             if portfolio_id is None:
                 _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
@@ -198,25 +199,26 @@ def liquidate_portfolio(current_user: str) -> None:
                     continue
                 
                 current_price = float(security.price)
-                proceeds = investment.Qty * current_price
+                qty = int(investment.Qty)
+                ticker = investment.Ticker
+                proceeds = qty * current_price
                 total_proceeds += proceeds
+
+                update_transaction_record(
+                    transaction_id=None,
+                    user_id=current_user,
+                    portfolio_id=str(pid),
+                    security_id=ticker,
+                    transaction_type="SELL",
+                    qty=qty,
+                    price=current_price,
+                    timestamp=datetime.datetime.now()
+                )
                 
-            # Record transaction
-            update_transaction_record(
-                transaction_id=None,  # Will be auto-generated
-                user_id=current_user,
-                portfolio_id=str(id),
-                security_id=investment.Ticker,
-                transaction_type="SELL",
-                qty=int(investment.Qty),
-                price=current_price,
-                timestamp=datetime.datetime.now()
-            )
-            
-            _console.print(f"Liquidated {investment.Qty} of {investment.Ticker} at current market price ${current_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
+                _console.print(f"Liquidated {qty} of {ticker} at current market price ${current_price:,.2f} each. Proceeds: ${proceeds:,.2f}", style="green")
                 
-            # Remove investment
-            session.delete(investment)
+                # Remove investment
+                session.delete(investment)
             
             # Update user balance
             user = session.query(User).filter_by(username=current_user).first()
