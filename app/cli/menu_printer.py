@@ -1,11 +1,11 @@
-from cli import constants
+from app.cli import constants
 from typing import Dict
-from domain.MenuFunctions import MenuFunctions
-from services.user_services import render_users, add_user, delete_user
-from services.portfolio_services import view_all_portfolios, delete_portfolio, create_portfolio, liquidate_portfolio
-from services.security_services import view_all_securities, place_order
-from services.transaction_services import view_transactions, query_transactions_by_user, query_transactions_by_portfolio, query_transactions_by_security
-from services.login_services import login, admin_guard
+from app.domain.MenuFunctions import MenuFunctions
+from app.services.user_services import render_users, add_user, delete_user
+from app.services.portfolio_services import view_all_portfolios, delete_portfolio, create_portfolio, liquidate_portfolio
+from app.services.security_services import view_all_securities, place_order
+from app.services.transaction_services import view_transactions, query_transactions_by_user, query_transactions_by_portfolio, query_transactions_by_security
+from app.services.login_services import login, admin_guard
 
 _menu: Dict[int, str] = {
     constants.login_menu: "------\nLogin Menu\n-----\n1. Login\n0. Exit",
@@ -46,6 +46,5 @@ _router: Dict[str, MenuFunctions] ={
     "5.3": MenuFunctions(executor=query_transactions_by_portfolio, navigator=lambda: constants.transaction_menu),
     "5.4": MenuFunctions(executor=query_transactions_by_security, navigator=lambda: constants.transaction_menu),
     }
-
 
 

@@ -1,10 +1,20 @@
-# print menu via menu printer options
-# should print login menu and should naviagate between menus based on user input
+from __future__ import annotations
+import pathlib
+import sys
 
-from cli import constants
-from services.login_services import print_menu
+# Allow running as `python -m app.main` or `python app/main.py`
+if __name__ == "__main__" and (__package__ is None or __package__ == ""):
+    sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 
-print_menu(constants.login_menu)
+from app.cli import constants
+from app.services.login_services import print_menu
 
+
+def main() -> None:
+    print_menu(constants.login_menu)
+
+
+if __name__ == "__main__":
+    main()
 
 

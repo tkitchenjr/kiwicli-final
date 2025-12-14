@@ -12,7 +12,7 @@ _console = Console()
 current_user = None
 
 def handle_user_input(menu_id: int, user_input: str):
-    from cli.menu_printer import _router
+    from app.cli.menu_printer import _router
     try:
         # Convert user_input to int for menu navigation
         input_num = int(user_input)
@@ -80,7 +80,7 @@ def print_error(error: str):
     _console.print(error, style='red')
 
 def print_menu(menu_type: int) -> None:
-    from cli.menu_printer import _menu
+    from app.cli.menu_printer import _menu
     _console.print(_menu[menu_type])
     user_input = _console.input("Select a menu: ")
     handle_user_input(menu_type, user_input)

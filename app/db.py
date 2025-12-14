@@ -1,11 +1,11 @@
 # define starting user dictionary
-from domain.Investment import Investment 
-from domain.Transactions import Transactions
-from domain.Security import Security
-from domain.User import User
+from app.domain.Investment import Investment 
+from app.domain.Transactions import Transactions
+from app.domain.Security import Security
+from app.domain.User import User
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from domain.User import User
+    from app.domain.User import User
 
 #create User list
 users = [
