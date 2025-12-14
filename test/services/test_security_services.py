@@ -161,3 +161,18 @@ def test_place_order_no_current_user(db_session, monkeypatch):
 
     result = place_order(portfolio_id=1, ticker='AAPL', quantity=1)
     assert result is False
+
+def test_place_order_portfolio_not_found(db_session, monkeypatch):
+    monkeypatch.setattr('app.services.security_services.get_session', lambda: db_session)
+    monkeypatch.setattr('app.services.transaction_services.get_session', lambda: db_session)
+    monkeypatch.setattr('app.services.login_services.current_user', 'testuser')
+    
+    user = User(username='testuser', password='password', firstname='First', lastname='Last', balance=10000)
+    security = Security(symbol='AAPL', issuer='Apple Inc.', name='Apple Stock', price=150.0)
+    db_session.add(user)
+    db_session.add(security)
+    db_session.commit()
+
+    result = place_order(portfolio_id=999, ticker='AAPL', quantity=1)
+    assert result is False
+

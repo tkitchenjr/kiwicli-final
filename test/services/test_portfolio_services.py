@@ -164,3 +164,41 @@ def test_delete_portfolio_not_owner(db_session, monkeypatch):
     
     assert result is False
     assert db_session.query(Portfolio).count() == 1
+
+def test_partial_liquidations(db_session, monkeypatch):
+    monkeypatch.setattr('app.services.portfolio_services.get_session', lambda: db_session)
+    monkeypatch.setattr('app.services.transaction_services.get_session', lambda: db_session)
+    inputs = iter(["1", "AAPL", "5", "Y"])
+    monkeypatch.setattr('app.services.portfolio_services._console.input', lambda prompt='': next(inputs))
+    
+    user = User(username='testuser', password='pw', firstname='First', lastname='Last', balance=0)
+    portfolio = Portfolio(id=1, name='Test Portfolio', description='Test Description', owner='testuser')
+    security = Security(symbol='AAPL', name='Apple Inc', issuer='Apple', price=150.0)
+    investment = Investment(portfolio_id=1, Ticker='AAPL', Qty=10, purchase_price=150.0)
+    
+    db_session.add(user)
+    db_session.add(portfolio)
+    db_session.add(security)
+    db_session.add(investment)
+    db_session.commit()
+    
+    result = liquidate_portfolio('testuser')
+    
+    assert result is None
+
+def test_view_all_portfolios_not_admin(db_session, monkeypatch):
+    monkeypatch.setattr('app.services.portfolio_services.get_session', lambda: db_session)
+    
+    portfolio1 = Portfolio(id=1, name='Portfolio 1', description='Desc 1', owner='user1')
+    portfolio2 = Portfolio(id=2, name='Portfolio 2', description='Desc 2', owner='user2')
+    user = User(username='admin', password='pw', firstname='Admin', lastname='User', balance=0)
+
+    db_session.add(portfolio1)
+    db_session.add(portfolio2)
+    db_session.add(user)
+    db_session.commit()
+    
+    result = view_all_portfolios()
+    
+    assert result is None
+    assert db_session.query(Portfolio).count() == 2

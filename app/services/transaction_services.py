@@ -11,6 +11,7 @@ from datetime import datetime
 _console = Console()
 
 def update_transaction_record(transaction_id: str, user_id: str, portfolio_id: str,security_id: str, transaction_type: str, qty: int, price: float, timestamp: str):
+    
     new_transaction = Transactions(
         transaction_id=transaction_id,
         user_id=user_id,
