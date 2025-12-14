@@ -1,11 +1,11 @@
 from __future__ import annotations
 from rich.console import Console
 from typing import Tuple
-from cli import constants
+from app.cli import constants
 
-from domain.User import User
+from app.domain.User import User
     
-from database import SessionLocal
+from app.database import get_session
 
 _console = Console()
 
@@ -49,21 +49,25 @@ def get_login_inputs() -> Tuple[str,str]:
     password = _console.input("Enter password: ")
     return username, password
 
-def login():
+def login(username: str = None, password: str = None) -> bool:
     global current_user
-    username, password = get_login_inputs()
-    
+    # If creds not provided, prompt interactively
+    if username is None or password is None:
+        username, password = get_login_inputs()
+
     try:
-        with SessionLocal() as session:
+        with get_session() as session:
             user = session.query(User).filter_by(username=username).first()
             if not user or user.password != password:
                 current_user = None
-                raise Exception("Invalid username or password")
+                return False
             
             current_user = username  # Store username string as global
             _console.print(f"\nWelcome, {user.firstname}!", style="green")
-    except Exception as e:
-        raise Exception(f"Login failed: {str(e)}")
+            return True
+    except Exception:
+        current_user = None
+        return False
 
 def admin_guard():
     if  current_user == "admin":

@@ -4,16 +4,16 @@ from typing import List
 from rich.console import Console
 from rich.table import Table
 
-from domain.Portfolio import Portfolio
-from domain.User import User
+from app.domain.Portfolio import Portfolio
+from app.domain.User import User
 
-from database import SessionLocal
+from app.database import get_session
 
 _console = Console()
 
 
 def list_users() -> List[User]:
-    with SessionLocal() as session:
+    with get_session() as session:
         return session.query(User).all()
 
 def view_users(users: List[User]) -> None:
@@ -30,62 +30,66 @@ def view_users(users: List[User]) -> None:
 def render_users() -> None:
     view_users(list_users())
 
-def add_user() -> None:
-    with SessionLocal() as session:
-        _console.print("\n   Add New User   ", style="yellow")
-        new_username = _console.input("Username: ")
+def add_user(username: str = None, password: str = None, firstname: str = None, lastname: str = None, balance: float = None) -> bool:
+    with get_session() as session:
+        if username is None:
+            _console.print("\n   Add New User   ", style="yellow")
+            username = _console.input("Username: ")
 
-        # Check for duplicate username
-        existing_user = session.query(User).filter_by(username=new_username).first()
-        existing_user = session.query(User).filter_by(username=new_username).first()
+        existing_user = session.query(User).filter_by(username=username).first()
         if existing_user:
-            _console.print(f"Error: Duplicate username '{new_username}'. Please choose a different username.", style="red")
-            return
-        # gather user input
-        password = _console.input("Password: ")
-        firstname = _console.input("First Name: ")
-        lastname = _console.input("Last Name: ")
-        balance_str = _console.input("Balance: ")
+            if password is None:
+                _console.print(f"Error: Duplicate username '{username}'. Please choose a different username.", style="red")
+            return False
+            
+        if password is None:
+            password = _console.input("Password: ")
+        if firstname is None:
+            firstname = _console.input("First Name: ")
+        if lastname is None:
+            lastname = _console.input("Last Name: ")
+        if balance is None:
+            balance_str = _console.input("Balance: ")
+            try:
+                balance = float(balance_str)
+            except ValueError:
+                _console.print("Balance must be a number.", style="red")
+                return False
         
         try:
-            balance = float(balance_str)
-        except ValueError:
-            _console.print("Balance must be a number.", style="red")
-            return
-        
-        #add user to database
-        try:
-                new_user = User(username=new_username, password=password, firstname=firstname, lastname=lastname, balance=balance)
-                session.add(new_user)
-                session.commit()
-                _console.print(f"\nWelcome {new_username}! User added.", style="green")
+            new_user = User(username=username, password=password, firstname=firstname, lastname=lastname, balance=balance)
+            session.add(new_user)
+            session.commit()
+            if password is None or firstname is None or lastname is None:
+                _console.print(f"\nWelcome {username}! User added.", style="green")
+            return True
         except Exception as e:
-            _console.print(f"Error adding user: {e}", style="red")
+            if password is None or firstname is None or lastname is None:
+                _console.print(f"Error adding user: {e}", style="red")
+            return False
 
-def delete_user() -> None:
-    _console.print("\n   Delete User   ", style="yellow")
-    username = _console.input("Enter username to delete: ")
+def delete_user(username: str = None) -> bool:
+    if username is None:
+        _console.print("\n   Delete User   ", style="yellow")
+        username = _console.input("Enter username to delete: ")
 
-    # Check if user is admin
     if username.strip().lower() == "admin":
-        _console.print("Cannot delete admin account.", style="red")
-        return
+        if username is None:
+            _console.print("Cannot delete admin account.", style="red")
+        return False
     
-    with SessionLocal() as session:
-        # Check if user exists
+    with get_session() as session:
         user = session.query(User).filter_by(username=username).first()
         if not user:
             _console.print("Cannot delete this user (not found).", style="red")
-            return
+            return False
         
-        # Check for portfolios owned by user
         user_portfolios = session.query(Portfolio).filter_by(owner=username).all()
         if user_portfolios:
             _console.print(f"User '{username}' owns {len(user_portfolios)} portfolio(s).", style="red")
             remove_choice = _console.input("Would you like to remove all portfolios for this user? (Y/N): ").strip().lower()
             
             if remove_choice == "y":
-                # Delete all portfolios for this user
                 for portfolio in user_portfolios:
                     session.delete(portfolio)
                 session.commit()
@@ -94,12 +98,12 @@ def delete_user() -> None:
                 confirm_delete = _console.input(f"Would you like to delete user '{username}' now? (Y/N): ").strip().lower()
                 if confirm_delete != "y":
                     _console.print("User deletion cancelled.", style="yellow")
-                    return
-        else:
-            _console.print("User deletion cancelled. Please remove portfolios first if you wish to proceed.", style="yellow")
-            return
+                    return False
+            else:
+                _console.print("User deletion cancelled. Please remove portfolios first if you wish to proceed.", style="yellow")
+                return False
 
-        # Proceed to delete user
         session.delete(user)
         session.commit()
         _console.print(f"User '{username}' deleted.", style="green")
+        return True

@@ -2,15 +2,16 @@ from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
 
-from database import SessionLocal
+from app.database import get_session
 
-from domain.Transactions import Transactions
+from app.domain.Transactions import Transactions
 
 from datetime import datetime
 
 _console = Console()
 
 def update_transaction_record(transaction_id: str, user_id: str, portfolio_id: str,security_id: str, transaction_type: str, qty: int, price: float, timestamp: str):
+    
     new_transaction = Transactions(
         transaction_id=transaction_id,
         user_id=user_id,
@@ -22,7 +23,7 @@ def update_transaction_record(transaction_id: str, user_id: str, portfolio_id: s
         timestamp=datetime.now()
     )
 
-    with SessionLocal() as session:
+    with get_session() as session:
         session.add(new_transaction)
         session.commit()
     _console.print(f"Transaction recorded: {transaction_type} {qty} of {security_id} at ${price:.2f}", style="green")
@@ -34,7 +35,7 @@ def format_timestamp(timestamp) -> str:
         return str(timestamp)
 
 def view_transactions():
-    with SessionLocal() as session:
+    with get_session() as session:
         transactions_list = session.query(Transactions).all()
     if not transactions_list:
         _console.print("No transactions found.", style="yellow")
@@ -64,17 +65,18 @@ def view_transactions():
         )
     _console.print(table)
 
-def query_transactions_by_user():
-    with SessionLocal() as session:
-        input_id = _console.input("Enter User ID to query: ").strip().lower()
-        if not input_id:
+def query_transactions_by_user(user_id: str = None):
+    with get_session() as session:
+        if user_id is None:
+            user_id = _console.input("Enter User ID to query: ").strip().lower()
+        if not user_id:
             _console.print("User ID cannot be empty.", style="red")
             return 
-        user_transactions = session.query(Transactions).filter_by(user_id=input_id).all()
+        user_transactions = session.query(Transactions).filter_by(user_id=user_id).all()
         if not user_transactions:
-            _console.print(f"No transactions found for User ID: {input_id}", style="yellow")
+            _console.print(f"No transactions found for User ID: {user_id}", style="yellow")
             return
-        table = Table(title=f"Transactions for User ID: {input_id}")
+        table = Table(title=f"Transactions for User ID: {user_id}")
         table.add_column("Transaction ID", justify="center", style="cyan", no_wrap=True)
         table.add_column("Portfolio ID", justify="center", style="green", no_wrap=True)
         table.add_column("Security ID", justify="center", style="blue", no_wrap=True)
@@ -94,19 +96,19 @@ def query_transactions_by_user():
             )
     _console.print(table)
 
-def query_transactions_by_portfolio():
-    with SessionLocal() as session:
-        id = _console.input("Enter Portfolio ID to query: ").strip()
-    if not id:
+def query_transactions_by_portfolio(portfolio_id: str = None):
+    with get_session() as session:
+        if portfolio_id is None:
+            portfolio_id = _console.input("Enter Portfolio ID to query: ").strip()
+    if not portfolio_id:
         _console.print("Portfolio ID cannot be empty.", style="red")
         return 
-    transactions = session.query(Transactions).filter_by(portfolio_id=id).all()
+    transactions = session.query(Transactions).filter_by(portfolio_id=portfolio_id).all()
     if not transactions:
-        _console.print(f"No transactions found for Portfolio ID: {id}", style="yellow")
+        _console.print(f"No transactions found for Portfolio ID: {portfolio_id}", style="yellow")
         return
     
-    #render table
-    table = Table(title=f"Transactions for Portfolio ID: {id}")
+    table = Table(title=f"Transactions for Portfolio ID: {portfolio_id}")
     table.add_column("Transaction ID", justify="center", style="cyan", no_wrap=True)
     table.add_column("User ID", justify="center", style="green", no_wrap=True)
     table.add_column("Security ID", justify="center", style="blue", no_wrap=True)
@@ -115,7 +117,6 @@ def query_transactions_by_portfolio():
     table.add_column("Price", justify="center", style="green", no_wrap=True)
     table.add_column("Timestamp", justify="center", style="dim", no_wrap=True)
     
-    #populate table
     for t in transactions:
         table.add_row(
             str(t.transaction_id),
@@ -128,9 +129,10 @@ def query_transactions_by_portfolio():
         )
     _console.print(table)
 
-def query_transactions_by_security():
-    with SessionLocal() as session:
-        ticker = _console.input("Enter Ticker to query: ").strip().upper()
+def query_transactions_by_security(ticker: str = None):
+    with get_session() as session:
+        if ticker is None:
+            ticker = _console.input("Enter Ticker to query: ").strip().upper()
         if not ticker:
             _console.print("Ticker cannot be empty.", style="red")
             return 
@@ -139,7 +141,6 @@ def query_transactions_by_security():
             _console.print(f"No transactions found for Security ID: {ticker}", style="yellow")
             return
         
-        #render table
         table = Table(title=f"Transactions for Security ID: {ticker}")
         table.add_column("Transaction ID", justify="center", style="cyan", no_wrap=True)
         table.add_column("User ID", justify="center", style="green", no_wrap=True)
@@ -149,7 +150,6 @@ def query_transactions_by_security():
         table.add_column("Price", justify="center", style="green", no_wrap=True)
         table.add_column("Timestamp", justify="center", style="dim", no_wrap=True)
 
-        #populate table
         for t in transactions:
             table.add_row(
                 str(t),
