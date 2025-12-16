@@ -1,11 +1,11 @@
 from __future__ import annotations
-from app.database import Base
+from app.db import db
 from sqlalchemy import ForeignKey, String, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: import Investment
 
-class Portfolio(Base):
+class Portfolio(db.Model):
     # def __init__(self, portfolio_id: int, name: str, description: str, holdings: list[Investment]):
     #     self.portfolio_id = portfolio_id
     #     self.name = name
