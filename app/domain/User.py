@@ -1,9 +1,9 @@
-from app.database import Base
+from app.db import db
 from sqlalchemy import String, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
 #define User class
-class User(Base):
+class User(db.Model):
 #	def __init__(self, username:str, password:str, firstname:str, lastname:str, balance:float):
 #		self.username = username
 #		self.password = password

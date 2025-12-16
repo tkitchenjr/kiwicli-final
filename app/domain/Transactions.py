@@ -1,8 +1,8 @@
-from app.database import Base
+from app.db import db
 from sqlalchemy import String, Integer, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
-class Transactions(Base): 
+class Transactions(db.Model): 
     # def __init__(self, transaction_id: str, user_id: str, portfolio_id: str, security_id: str, transaction_type: str, qty: int, price: float, timestamp: str):
     #     self.transaction_id = transaction_id
     #     self.user_id = user_id

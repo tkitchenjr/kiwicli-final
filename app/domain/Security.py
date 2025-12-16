@@ -1,8 +1,8 @@
-from app.database import Base
+from app.db import db
 from sqlalchemy import ForeignKey, String, Float
 from sqlalchemy.orm import Mapped, mapped_column
 
-class Security(Base):
+class Security(db.Model):
     # def __init__(self, symbol: str, name: str, sector: str):
     #     self.symbol = symbol
     #     self.name = name
