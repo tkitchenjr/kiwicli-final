@@ -1,10 +1,11 @@
-from app.database import Base
+from __future__ import annotations
+from app.db import db
 from sqlalchemy import ForeignKey, String, Integer, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: import Portfolio
 
-class Investment(Base):
+class Investment(db.Model):
     # def __init__(self, ticker: str, qty: int, purchase_price: float):
     #     self.ticker =ticker
     #     self.qty =qty
@@ -16,7 +17,7 @@ class Investment(Base):
     purchase_price: Mapped[float] = mapped_column(Float, nullable=False)
     
     #relationship back to Portfolio
-    holdings: Mapped["Portfolio"] = relationship("Portfolio", back_populates="holdings")
+    holdings: Mapped["Portfolio"] = relationship("Portfolio", back_populates="holdings") # type: ignore
 
 def __str__(self):
     return f"Investment(ticker={self.Ticker}, portfolio_id={self.portfolio_id}, qty={self.Qty}, purchase_price={self.purchase_price})"
