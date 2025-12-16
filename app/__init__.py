@@ -9,3 +9,4 @@ def create_app(config):
     db.init_app(app)
 
     return app
+

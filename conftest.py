@@ -1,12 +1,12 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from  app.database import Base
+from  app.db import db
 
 @pytest.fixture(scope="session")
 def engine():
     engine = create_engine("sqlite:///:memory:", echo=False)
-    Base.metadata.create_all(engine)
+    db.metadata.create_all(engine)
     return engine
 
 @pytest.fixture(scope="function")
