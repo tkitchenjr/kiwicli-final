@@ -12,7 +12,7 @@ from app.domain.User import User
 from app.services.transaction_services import update_transaction_record
 from app.services.transaction_services import format_timestamp
 
-from app.database import get_session 
+from app.db import db
 
 _console = Console()
 
@@ -23,7 +23,7 @@ def view_all_securities() -> None:
     table.add_column("Issuer", style="yellow", justify="center")
     table.add_column("Name", style="white", justify="center")
     table.add_column("Price", style="green", justify="center")
-    with get_session() as session:
+    with db.session as session:
         securities = session.query(Security).all()
         for sec in securities:
             table.add_row(
@@ -36,7 +36,7 @@ def view_all_securities() -> None:
 
 def place_order(portfolio_id: int = None, ticker: str = None, quantity: float = None) -> bool:
     from app.services.login_services import current_user
-    with get_session() as session:
+    with db.session as session:
         user_identifier = getattr(current_user, "username", current_user)
         user_portfolios = session.query(Portfolio).filter_by(owner=user_identifier).all()
         if not user_portfolios:

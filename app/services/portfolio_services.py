@@ -11,7 +11,7 @@ from app.domain.Security import Security
 from app.services.transaction_services import update_transaction_record
 from app.services.login_services import current_user
 
-from app.database import get_session
+from app.db import db
 
 import datetime
 
@@ -20,7 +20,7 @@ _console = Console()
 
 
 def view_all_portfolios() -> None:
-    with get_session() as session:
+    with db.session as session:
         if not session.query(User).filter_by(username=current_user).first():
             _console.print("Please log in to view portfolios.", style="red")
             return
@@ -66,7 +66,7 @@ def view_all_portfolios() -> None:
                     _console.print("Invalid input.", style="red")
     
 def view_holdings(portfolio_id: int, current_user: str) -> None:
-    with get_session() as session:
+    with db.session as session:
         # Use provided portfolio_id when passed; otherwise prompt the user.
         if portfolio_id is None:
             portfolio_id = _console.input("Enter Portfolio ID to view holdings: ").strip()
@@ -108,7 +108,7 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
     return
     
 def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
-    with get_session() as session:
+    with db.session as session:
         if name is None:
             name = _console.input("Enter Portfolio name: ", style="yellow")
         if description is None:
@@ -127,7 +127,7 @@ def create_portfolio(current_user: str, name: str = None, description: str = Non
         return True
     
 def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
-    with get_session() as session:
+    with db.session as session:
         if portfolio_id is None:
             _console.print("\n   Delete Portfolio   ", style="yellow")
             try:
@@ -161,7 +161,7 @@ def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
         return True
 
 def liquidate_portfolio(current_user: str) -> None:
-    with get_session() as session:
+    with db.session as session:
         _console.print("\n   Harvest Liquidation   ", style="yellow")
         try:
             pid_str = _console.input("Enter Portfolio ID: ").strip()

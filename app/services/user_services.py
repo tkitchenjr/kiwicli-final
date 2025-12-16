@@ -7,13 +7,13 @@ from rich.table import Table
 from app.domain.Portfolio import Portfolio
 from app.domain.User import User
 
-from app.database import get_session
+from app.db import db
 
 _console = Console()
 
 
 def list_users() -> List[User]:
-    with get_session() as session:
+    with db.session as session:
         return session.query(User).all()
 
 def view_users(users: List[User]) -> None:
@@ -31,7 +31,7 @@ def render_users() -> None:
     view_users(list_users())
 
 def add_user(username: str = None, password: str = None, firstname: str = None, lastname: str = None, balance: float = None) -> bool:
-    with get_session() as session:
+    with db.session as session:
         if username is None:
             _console.print("\n   Add New User   ", style="yellow")
             username = _console.input("Username: ")
@@ -78,7 +78,7 @@ def delete_user(username: str = None) -> bool:
             _console.print("Cannot delete admin account.", style="red")
         return False
     
-    with get_session() as session:
+    with db.session as session:
         user = session.query(User).filter_by(username=username).first()
         if not user:
             _console.print("Cannot delete this user (not found).", style="red")
