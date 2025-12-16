@@ -5,7 +5,7 @@ from app.cli import constants
 
 from app.domain.User import User
     
-from app.database import get_session
+from app.db import db
 
 _console = Console()
 
@@ -56,7 +56,7 @@ def login(username: str = None, password: str = None) -> bool:
         username, password = get_login_inputs()
 
     try:
-        with get_session() as session:
+        with db.session as session:
             user = session.query(User).filter_by(username=username).first()
             if not user or user.password != password:
                 current_user = None

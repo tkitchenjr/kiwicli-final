@@ -2,7 +2,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
 
-from app.database import get_session
+from app.db import db
 
 from app.domain.Transactions import Transactions
 
@@ -23,7 +23,7 @@ def update_transaction_record(transaction_id: str, user_id: str, portfolio_id: s
         timestamp=datetime.now()
     )
 
-    with get_session() as session:
+    with db.session as session:
         session.add(new_transaction)
         session.commit()
     _console.print(f"Transaction recorded: {transaction_type} {qty} of {security_id} at ${price:.2f}", style="green")
@@ -35,7 +35,7 @@ def format_timestamp(timestamp) -> str:
         return str(timestamp)
 
 def view_transactions():
-    with get_session() as session:
+    with db.session as session:
         transactions_list = session.query(Transactions).all()
     if not transactions_list:
         _console.print("No transactions found.", style="yellow")
@@ -66,7 +66,7 @@ def view_transactions():
     _console.print(table)
 
 def query_transactions_by_user(user_id: str = None):
-    with get_session() as session:
+    with db.session as session:
         if user_id is None:
             user_id = _console.input("Enter User ID to query: ").strip().lower()
         if not user_id:
@@ -97,7 +97,7 @@ def query_transactions_by_user(user_id: str = None):
     _console.print(table)
 
 def query_transactions_by_portfolio(portfolio_id: str = None):
-    with get_session() as session:
+    with db.session as session:
         if portfolio_id is None:
             portfolio_id = _console.input("Enter Portfolio ID to query: ").strip()
     if not portfolio_id:
@@ -130,7 +130,7 @@ def query_transactions_by_portfolio(portfolio_id: str = None):
     _console.print(table)
 
 def query_transactions_by_security(ticker: str = None):
-    with get_session() as session:
+    with db.session as session:
         if ticker is None:
             ticker = _console.input("Enter Ticker to query: ").strip().upper()
         if not ticker:
