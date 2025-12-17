@@ -19,6 +19,6 @@ password: admin
 ## Database configuration
 
 - Configuration lives in app/config.py and should return a database URL string via database_config().
-- To point at your own DB: export DATABASE_URL="mysql+pymysql://user:pw@host:3306/kiwidb" (or any SQLAlchemy URL).
+- To point at your own DB input your database info in the config file. This data will be returned via DATABASE_URL="mysql+pymysql://user:pw@host:3306/kiwidb" (or any SQLAlchemy URL).
 - For a quick local run with no setup, do nothing; it will default to SQLite at ./kiwidb.sqlite.
 - On the first call to get_session(), the app runs Base.metadata.create_all(engine) to create missing tables in the configured DB.
