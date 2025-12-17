@@ -110,11 +110,9 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
 def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
     with get_session() as session:
         if name is None:
-            _console.print("Portfolio name is required.", style="yellow")
-            return False
+            name = _console.input("Enter Portfolio name: ", style="yellow")
         if description is None:
-            _console.print("Portfolio description is required.", style="yellow")
-            return False
+            description =_console.input("Enter Portfolio description: ", style="yellow")
 
         new_portfolio = Portfolio(
             id=session.query(Portfolio).count() + 1,
