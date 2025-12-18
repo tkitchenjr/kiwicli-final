@@ -107,62 +107,159 @@ def view_holdings(portfolio_id: int, current_user: str) -> None:
         table.add_row(sym, str(qty), f"${balance:,.2f}")
     return
     
-def create_portfolio(current_user: str, name: str = None, description: str = None) -> bool:
-    with db.session as session:
-        if name is None:
-            name = _console.input("Enter Portfolio name: ", style="yellow")
-        if description is None:
-            description =_console.input("Enter Portfolio description: ", style="yellow")
-
-        new_portfolio = Portfolio(
-            id=session.query(Portfolio).count() + 1,
-            name=name,
-            description=description,
-            owner=current_user
-        )
-        session.add(new_portfolio)
-        session.commit()
-
-        _console.print(f"Portfolio '{new_portfolio.id}' created with ID {new_portfolio.id}.", style="green")
-        return True
+def create_portfolio(name: str, description: str, owner: str) -> dict:
     
-def delete_portfolio(current_user: str, portfolio_id: int = None) -> bool:
-    with db.session as session:
-        if portfolio_id is None:
-            _console.print("\n   Delete Portfolio   ", style="yellow")
-            try:
-                pid_str = _console.input("Enter Portfolio ID to delete: ").strip()
-                portfolio_id = int(pid_str)
-            except Exception:
-                _console.print("Invalid Portfolio ID.", style="red")
-                return False
-        
-        portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
-        if not portfolio:
-            if portfolio_id is None:
-                _console.print(f"Portfolio ID {portfolio_id} not found.", style="red")
-            return False
-        
-        if current_user != "admin" and portfolio.owner != current_user:
-            if portfolio_id is None:
-                _console.print("Access denied: you cannot delete another user's portfolio.", style="red")
-            return False
+    portfolio = Portfolio(name=name, description=description, owner=owner)
+    
+    try:
+        with db.session as session:
+            session.add(portfolio)
+            session.commit()
 
-        investments = session.query(Investment).filter_by(portfolio_id=portfolio.id).all()
-        if investments:
-            if portfolio_id is None:
-                _console.print("Cannot delete portfolio: investments must be liquidated before deletion.", style="red")
-            return False
-        
-        session.delete(portfolio)
-        session.commit()
-        if portfolio_id is None:
-            _console.print(f"Portfolio '{portfolio.name}' deleted successfully.", style="green")
-        return True
+        return {
+            "success": True,
+            "message": f"Portfolio '{name}' created successfully.",
+            "portfolio_id": portfolio.id,
+            "status": 200
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error creating portfolio: {str(e)}",
+            "status": 400
+        }
+ 
+    
+    
+def delete_portfolio(portfolio_id: int) -> dict: 
+    try:
+        with db.session as session:
+            portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
+            if not portfolio:
+                return {
+                    "success": False,
+                    "message": f"Portfolio {portfolio} not found.",
+                    "status": 400
+                }
+            # if current_user != "admin" and portfolio.owner != current_user:
+            #     return {
+            #         "success": False,
+            #         "message": "Access denied: you cannot delete another user's portfolio.",
+            # #         "status": 400
+            #     }
+            if session.query(Investment).filter_by(portfolio_id=portfolio.id).first():
+                return {
+                    "success": False,
+                    "message": "Cannot delete portfolio: investments must be liquidated before deletion.",
+                    "status": 400
+                }
+            session.delete(portfolio)
+            session.commit()
+        return {
+            "success": True,
+            "message": f"Portfolio '{portfolio.name}' deleted successfully.",
+            "status": 200
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error deleting portfolio: {str(e)}",
+            "status": 400
+        }
 
-def liquidate_portfolio(current_user: str) -> None:
+def liquidate_portfolio(portfolio_id: int) -> dict:
+    try:
+        with db.session as session:
+            portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
+            if not portfolio:
+                return {
+                    "success": False,
+                    "message": f"Portfolio {portfolio} not found.",
+                    "status": 400
+                }
+            # if current_user != "admin" and portfolio.owner != current_user:
+            #     return {
+            #         "success": False,
+            #         "message": "Access denied: you cannot liquidate another user's portfolio.",
+            #         "status": 400
+            #     }
+            investments = session.query(Investment).filter_by(portfolio_id=portfolio.id).all()
+            if not investments:
+                return {
+                    "success": False,
+                    "message": "No holdings to liquidate.",
+                    "status": 400
+                }
+            for investment in investments:
+                session.delete(investment)
+            session.commit()
+        return {
+            "success": True,
+            "message": f"All holdings in portfolio '{portfolio.name}' liquidated successfully.",
+            "status": 200
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error liquidating portfolio: {str(e)}",
+            "status": 400
+        }
+
+def partial_liquidate_portfolio(ticker: str, qty: int, portfolio_id: int) -> dict:
+    try: 
+        with db.session as session:
+            portfolio = session.query(Portfolio).filter_by(id=portfolio_id).first()
+            if not portfolio:
+                return {
+                    "success": False,
+                    "message": f"Portfolio {portfolio_id} not found.",
+                    "status": 400
+                }
+            # if current_user != "admin" and portfolio.owner != current_user:
+            #     return {
+            #         "success": False,
+            #         "message": "Access denied: you cannot liquidate another user's portfolio.",
+            #         "status": 400
+            #     }
+            investments = session.query(Investment).filter_by(ticker=ticker, portfolio_id=portfolio.id).all()
+            if not investments:
+                return {
+                    "success": False,
+                    "message": "No holdings to liquidate.",
+                    "status": 400
+                }
+            for investment in investments:
+                if investment.Qty <= qty:
+                    return {
+                        "success": False,
+                        "message": f"Cannot liquidate more than owned quantity of {investment.Qty}.",
+                        "status": 400
+                    }
+                if investment.Qty == qty:
+                    session.delete(investment)
+                    return {
+                        "success": True,
+                        "message": f"Liquidated all holdings of {investment.Ticker} successfully.",
+                        "status": 200
+                    }
+                else:
+                    investment.Qty -= qty
+                    session.commit()
+                    return {
+                        "success": True,
+                        "message": f"Liquidated {qty} of {investment.Ticker} successfully.",
+                        "status": 200
+                    }
+            session.commit()
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error liquidating Investments: {str(e)}",
+            "status": 400
+        }
+    
     with db.session as session:
-        _console.print("\n   Harvest Liquidation   ", style="yellow")
+    
         try:
             pid_str = _console.input("Enter Portfolio ID: ").strip()
             pid = int(pid_str)
