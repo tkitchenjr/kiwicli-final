@@ -19,7 +19,7 @@ class Portfolio(db.Model):
 
     # map relationship to Investment lists DOES NOT NEED A COLUMN IN SQL TABLE
     # Intent is to serve as an ORM feature to access related Investment objects that I've designed to be held in holdings within a portfolio
-    holdings: Mapped[list["Investment"]] = relationship("Investment", back_populates="holdings")
+    holdings: Mapped[list["Investment"]] = relationship("Investment", back_populates="holdings") # type: ignore
     
 
 def __str__(self):

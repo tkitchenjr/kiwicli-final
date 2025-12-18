@@ -1,3 +1,7 @@
+#no routers so assumed to be ignored from blueprints and refactoring
+# per instructions login and current user to be handled in another way in the future
+
+
 from __future__ import annotations
 from rich.console import Console
 from typing import Tuple

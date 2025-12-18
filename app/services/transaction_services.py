@@ -1,3 +1,5 @@
+#no routers so assumed to be ignored from blueprints and refactoring
+
 from __future__ import annotations
 from rich.console import Console
 from rich.table import Table
