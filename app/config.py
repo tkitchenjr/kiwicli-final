@@ -9,4 +9,4 @@ def database_config():
 
 class Config:
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{database_config.get('user')}:{database_config.get('password')}@{database_config.get('host')}:{database_config.get('port')}/{database_config.get('db_name')}"
+    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{database_config().get('user')}:{database_config().get('password')}@{database_config().get('host')}:{database_config().get('port')}/{database_config().get('db_name')}"
