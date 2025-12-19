@@ -1,112 +1,105 @@
- 1. Plan and Define the Core Components
-Before diving into implementation, ensure you have a clear understanding of the following:
-- Objects: Define the core objects (e.g., `User`, `Portfolio`, `Stock`) and their attributes and methods.
-- Features: List the features your application will support (e.g., user management, portfolio management, marketplace).
-- CLI Structure: Plan the menus and commands your CLI will expose to the user.
+KiwiCLI Final Execution Plan
 
----
+Overview:
+KiwiCLI is a command-line interface application designed to manage users, portfolios, and stock transactions. The application is structured into three primary layers: Domain, Services, and CLI (Interface). This separation ensures modularity, testability, and maintainability.
 
- 2. Implement Core Objects (Domain Layer)
-Start by implementing the core objects that represent your application's data and logic. These objects should be independent of the CLI.
+Module Relationships:
+1. Domain Layer:
+   - Contains core business objects: User, Portfolio, Stock.
+   - Each class encapsulates attributes and methods relevant to the entity.
+   - Independent of CLI and Services layers.
 
- Example:
-- `User` Class:
-  - Attributes: `username`, `first_name`, `last_name`, etc.
-  - Methods: `update_profile`, `get_full_name`, etc.
-- `Portfolio` Class:
-  - Attributes: `name`, `assets`, `value`.
-  - Methods: `add_asset`, `remove_asset`, `calculate_value`.
+2. Services Layer:
+   - Implements business logic using Domain objects.
+   - UserService: Manages user-related operations (add, delete, modify).
+   - PortfolioService: Handles portfolio operations (view balance, view percentage).
+   - StockService: Manages stock transactions (buy, sell).
+   - Services interact with the database to persist and retrieve data.
 
- Steps:
-1. Create a `domain` folder to house your core objects.
-2. Define each class in its own file (e.g., `domain/User.py`, `domain/Portfolio.py`).
-3. Write unit tests for each class to ensure they work as expected.
+3. CLI Layer:
+   - Handles user interaction via menus and commands.
+   - Uses Services to perform operations.
+   - Contains menu_printer.py responsible for displaying menus and prompts.
+   - Other CLI modules handle input processing and command dispatch.
 
-User
-Methods: Add, Delete, Modify?
+Contracts Between menu_printer.py and Other Modules:
+- menu_printer.py provides functions to display menus and collect user input.
+- It returns user selections as standardized codes or strings.
+- Other CLI modules call menu_printer functions to show menus and receive input.
+- The CLI modules interpret input and call appropriate Service methods.
+- menu_printer.py does not perform business logic or data manipulation.
+- It only handles presentation and input collection.
 
-Portfolio
-Methods: View Balance, View %
-
-Stock:
-Methods: Buy, Sell
-—
-
-Database holds the actual data so functions should be built off of it
-
- 3. Implement Features (Service Layer)
-Once the objects are defined, implement the features that use these objects. These features should encapsulate the business logic and interact with the objects.
-
- Example:
-- User Management:
-  - Create a `UserService` class to handle user-related operations (e.g., create, delete, update users).
-- Portfolio Management:
-  - Create a `PortfolioService` class to handle portfolio-related operations (e.g., add/remove assets, calculate portfolio value).
-
- Steps:
-1. Create a `services` folder to house the feature logic.
-2. Define service classes that interact with the domain objects.
-3. Write unit tests for each service to ensure the features work as expected.
-
----
-
- 4. Design the CLI (Interface Layer)
-Now that the core objects and features are implemented, design the CLI to interact with the user. The CLI should call the appropriate services to perform operations.
-
- Example:
+Menu Mapping and Control Flow:
 - Main Menu:
-  - Options: `1. Login`, `2. Exit`.
+  Options:
+    1. Login
+    2. Exit
 - Login Menu:
-  - Options: `1. Manage Users`, `2. Manage Portfolios`, `3. Logout`.
+  Options:
+    1. Manage Users
+    2. Manage Portfolios
+    3. Logout
+- Manage Users Menu:
+  Options:
+    1. Add User
+    2. Delete User
+    3. Modify User
+    4. Back
+- Manage Portfolios Menu:
+  Options:
+    1. View Balance
+    2. View Percentage
+    3. Back
+- Stock Transactions Menu:
+  Options:
+    1. Buy Stock
+    2. Sell Stock
+    3. Back
 
- Steps:
-1. Create a 
+Control Flow:
+- The main CLI loop displays the Main Menu using menu_printer.
+- Based on user input, it navigates to Login Menu or exits.
+- Within Login Menu, user selects management options.
+- Each submenu uses menu_printer to display options and get input.
+- User selections trigger calls to Service methods.
+- After operations, control returns to the previous menu.
+- Input validation and error handling are centralized in CLI modules.
+- Exit options terminate the application gracefully.
 
-cli
+Implementation Steps:
+1. Domain Layer:
+   - Create domain/User.py, domain/Portfolio.py, domain/Stock.py.
+   - Define classes with attributes and methods as per requirements.
+   - Ensure no dependencies on Services or CLI.
 
- folder to house the CLI logic.
-2. Define constants for menu IDs and options (e.g., 
+2. Services Layer:
+   - Create services/UserService.py, services/PortfolioService.py, services/StockService.py.
+   - Implement methods to manipulate Domain objects and interact with database.
+   - Handle business rules and validations.
 
-MAIN_MENU
+3. CLI Layer:
+   - Create cli/menu_printer.py to handle all menu displays and input prompts.
+   - Create cli/main.py to implement the main control loop.
+   - Create additional CLI modules as needed for input processing.
+   - Use constants for menu IDs and options to maintain consistency.
+   - Integrate CLI with Services to perform requested operations.
 
-, 
+4. Testing:
+   - Write unit tests for Domain classes.
+   - Write unit tests for Service methods.
+   - Write integration tests for CLI and Services interaction.
+   - Perform manual testing to verify user experience.
 
-LOGIN_MENU
+5. Refactoring and Optimization:
+   - Review code for duplication and complexity.
+   - Improve error handling and input validation.
+   - Optimize data access patterns.
 
-).
-3. Implement functions to display menus and handle user input.
-4. Integrate the CLI with the services to perform operations.
+6. Deployment and Maintenance:
+   - Package application with necessary dependencies.
+   - Document CLI usage and feature set.
+   - Plan for future enhancements and bug fixes.
 
----
-
- 5. Integrate Components
-Once the CLI is implemented, integrate it with the services and domain objects. This is where the CLI interacts with the services, which in turn interact with the domain objects.
-
- Example:
-- When the user selects "Manage Users" from the CLI, the CLI calls the `UserService` to perform the requested operation.
-
----
-
- 6. Test the Application
-Testing is critical to ensure your application works as expected.
-
- Steps:
-1. Write unit tests for the domain objects, services, and CLI.
-2. Test the integration of the CLI with the services.
-3. Perform manual testing to ensure the menus and commands work as expected.
-
----
-
- 7. Refactor and Optimize
-After testing, refactor your code to improve readability, maintainability, and performance. Look for opportunities to:
-- Remove duplicate code.
-- Simplify complex logic.
-- Improve error handling.
-
----
-
- 8. Deploy and Maintain
-Once the application is complete, deploy it and ensure it’s maintainable:
-1. Package the application (e.g., using `setuptools` or `pyinstaller`).
-2. Write documentation for the CLI and features.
-3. Plan for future updates and enhancements.
+Summary:
+This execution plan ensures a clean separation of concerns, with clear contracts between modules. menu_printer.py is strictly responsible for UI presentation, while CLI modules handle control flow and Services implement business logic. This modular design facilitates testing, maintenance, and future scalability of KiwiCLI.
