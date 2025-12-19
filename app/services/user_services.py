@@ -28,27 +28,24 @@ def view_users() -> dict:
             "status": 500
         }
     
-def get_user_by_id(user:str) -> dict:
+def get_user_by_id(username:str) -> dict:
     try:
         session = db.session
-        users = session.query(User).filter_by(user=user).all()
-        if not users:
+        user = session.query(User).filter_by(username=username).first()
+        if not user:
             return {
                 "success": False,
                 "message": f"No portfolios found for {user} with Portfolio Id {id}",
                 "status": 404
             }
         else:
-            user_data = [
-                {
+            user_data= {
                 "username": user.username,
                 "password": user.password,
                 "firstname": user.firstname,
                 "lastname": user.lastname,
                 "balance": user.balance,
                 }
-            for user in users
-            ]
             return {
                 "success": True,
                 "message": f"User {user} returned.",

@@ -34,23 +34,22 @@ def view_all_portfolios() -> dict:
 def get_portfolio_by_id(id:int) -> dict:
     try: 
         session = db.session
-        portfolios = session.query(Portfolio).filter_by(id=id).first()
+        portfolio = session.query(Portfolio).filter_by(id=id).first()
 
-        if not portfolios:
+        if not portfolio:
             return {
                 "success": False,
                 "message": f"Portfolio Id {id} not found!",
                 "status": 404
             }
         else:
-            portfolio_data = [
-                {"id": portfolio.id,
+            portfolio_data = {
+                "id": portfolio.id,
                  "name": portfolio.name,
                  "description": portfolio.description,
                  "owner": portfolio.owner,
                 }
-            for portfolio in portfolios
-            ]
+
             return {
                 "success": True,
                 "message": f"Portfolio {id} returned.",

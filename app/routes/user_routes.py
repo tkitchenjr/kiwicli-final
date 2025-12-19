@@ -11,10 +11,10 @@ def view_users_route():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
   
-@user_bp.route("/<user>", methods=['GET'])
-def get_user_by_id_route(user):
+@user_bp.route("/<string:username>", methods=['GET'])
+def get_user_by_id_route(username):
     try:
-        result = get_user_by_id(user)
+        result = get_user_by_id(username)
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -45,7 +45,7 @@ def create_user_route():
     except Exception as e:
         return jsonify ({"error": str(e)}),400
 
-@user_bp.route('/delete/<username>', methods =['DELETE'])
+@user_bp.route('/delete/<string:username>', methods =['DELETE'])
 def delete_user(username):
     try:
         result = delete_user(username)
