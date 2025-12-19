@@ -1,10 +1,9 @@
 from flask import Flask
 from app.db import db
-from app.routes.login_routes import login_routes
-from app.routes.user_routes import user_routes
-from app.routes.portfolio_routes import portfolio_routes
-from app.routes.security_routes import security_routes
-from app.routes.transaction_routes import transaction_routes
+from app.routes.user_routes import user_bp
+from app.routes.portfolio_routes import portfolio_bp
+from app.routes.security_routes import security_bp
+
 
 def create_app(config):
     app = Flask(__name__)
@@ -12,10 +11,10 @@ def create_app(config):
     
     #register extensions
     db.init_app(app)
-    app.register_blueprint(login_routes)
-    app.register_blueprint(user_routes)
-    app.register_blueprint(portfolio_routes)
-    app.register_blueprint(security_routes)
-    app.register_blueprint(transaction_routes)
+
+    #register blueprints
+    app.register_blueprint(user_bp)
+    app.register_blueprint(portfolio_bp)
+    app.register_blueprint(security_bp)
 
     return app

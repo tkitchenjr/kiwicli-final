@@ -1,18 +1,26 @@
 from flask import Blueprint, request, jsonify
 from app.services.user_services import view_users, get_user_by_id, create_user, delete_user
 
-user_bp = Blueprint('user_routes', __name__, url_prefix="/user")
+user_bp = Blueprint('user_routes', __name__, url_prefix="/users")
 
 @user_bp.route('/', methods=['GET'])
-def view_users():
-    return jsonify({"message": "Listing all users"})
+def view_users_route():
+    try:
+        result = view_users()
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
   
-@user_bp.route("/<str:user>", methods=['GET'])
-def get_user_by_id(user):
-    return jsonify({"user": user}), 200
+@user_bp.route("/<user>", methods=['GET'])
+def get_user_by_id_route(user):
+    try:
+        result = get_user_by_id(user)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
-@user_bp.route("/create_user", methods=['POST'])
-def create_user(): 
+@user_bp.route("/create", methods=['POST'])
+def create_user_route(): 
     try:
         data = request.get_json()
         username = data.get('username')
@@ -29,15 +37,15 @@ def create_user():
             return jsonify({"error": "firstname required"}), 400
         if not lastname:
             return jsonify({"error": "lastname required"}), 400
-        if not balance:
+        if balance is None:
             return jsonify({"error": "balance required"}), 400
         
         result = create_user(username, password, firstname, lastname, balance)
-        jsonify(result), 201
+        return jsonify(result), 201
     except Exception as e:
         return jsonify ({"error": str(e)}),400
 
-@user_bp.route('/delete_user/<username>', methods =['DELETE'])
+@user_bp.route('/delete/<username>', methods =['DELETE'])
 def delete_user(username):
     try:
         result = delete_user(username)
